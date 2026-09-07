@@ -19,7 +19,10 @@
 - رفتار دستی «اکنون بررسی کن»، opt-out بررسی دوره‌ای، انتخاب pre-release و تمام محدودیت‌های
   HTTPS/redirect/size/repository حفظ شده‌اند؛ هیچ token، telemetry یا دانلود silent افزوده نشده است.
 - پنج regression جدید برای default، migration، کانال stable/debug، جلوگیری از اعلان تکراری
-  و زمان‌بندی افزوده و `versionCode` به 16 ارتقا یافت. CI، انتشار و آزمون دستگاه هنوز در انتظار است.
+  و زمان‌بندی افزوده و `versionCode` به 16 ارتقا یافت. PR #2 و runهای `34108267225` و
+  `34108620356` با ۱۰۱ تست JVM، schema gate بومی، lint و هر دو split سبز شدند؛ APK ARM64
+  با گواهی تشخیصی ثابت در `diagnostic-v0.5.0-alpha11` منتشر شد. آزمون updater و data path
+  روی دستگاه همچنان اجباری است.
 
 ## 0.4.9-phase4-alpha10-data-path — 2026-09-07
 

@@ -6,8 +6,9 @@
 
 نسخهٔ در حال توسعه: **`0.5.0-phase4-alpha11-auto-update`**، `versionCode=16`.
 درخواست فعال این است که برنامه انتشار جدید GitHub را خودش اعلام کند و با دکمهٔ کاربر
-APK را امن دانلود/تأیید و نصب‌کنندهٔ Android را باز کند. تغییرهای updater در worktree
-هستند و CI/release هنوز انجام نشده است.
+APK را امن دانلود/تأیید و نصب‌کنندهٔ Android را باز کند. تغییرهای updater در PR #2 ادغام،
+هر دو run الزامی CI سبز و APK ARM64 تشخیصی در `diagnostic-v0.5.0-alpha11` منتشر شده است.
+آزمون واقعی updater و data path روی دستگاه هنوز انجام نشده است.
 
 آلفا ۱۰ در commit `847db5b2a35f242827c5e514259cbaed1c1da968` و run `34098938303`
 CI را پاس و در `diagnostic-v0.4.9-alpha10` منتشر شد؛ پذیرش فیزیکی data path هنوز انجام
@@ -22,7 +23,7 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 `route.auto_detect_interface=false` از commit اولیه تا APK آلفا ۹ باقی مانده بود. بنابراین
 گزارش قدیمی «تأیید ترافیک واقعی آلفا ۷» نباید مبنای پذیرش قرار گیرد.
 
-## تغییرهای updater آلفا ۱۱ (در انتظار CI)
+## تغییرهای updater آلفا ۱۱ (CI سبز؛ منتشرشده، در انتظار دستگاه)
 
 - policy revision یک‌باره بررسی دوره‌ای را برای نصب‌های موجود فعال می‌کند؛ بعد از migration
   opt-out کاربر حفظ می‌شود.
@@ -36,6 +37,12 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 - یک لمس کاربر downloadAndVerify را اجرا و پس از size/hash/package/version/ABI/certificate
   verification، installer سیستم را باز می‌کند؛ تأیید نهایی Android اجباری است.
 - پنج تست policy جدید اضافه شده‌اند؛ کل suite اکنون ۱۰۱ متد `@Test` دارد.
+- PR run `34108267225` و main run `34108620356` سبز شدند. artifact رسمی main با ID
+  `10013523726` منبع ARM64 بود؛ SHA-256 ابری پیش از re-sign برابر
+  `f10247f6950464f9da3182a987578beb6c5408445bcd88a28095e32832bb7cef` است.
+- APK نهایی فقط با گواهی diagnostic ثابت re-sign شد: SHA-256 نهایی
+  `83a154c8c3fdfafc4b6cdbaaa9838679ff96d93feb4d1786722cd6c0dd95bfec`، فقط v2،
+  ARM64-only و zip/native alignment برابر 16 KiB.
 
 ## یافته‌های قطعی تعمیر آلفا ۱۰
 
@@ -183,6 +190,25 @@ import می‌شود و هر ۱۷ profile در repository باقی می‌مان
 - تست‌های policy/lifecycle برای ranking، freshness، جداسازی metric، hysteresis، cooldown،
   چهار تلاش و recovery مجاز اضافه شده‌اند و همراه کل suite و lint در CI پاس شدند.
 
+## APK آلفا ۱۱
+
+- انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.0-alpha11`
+- دانلود مستقیم: `https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.0-alpha11/FOXConnect-v16-debug-arm64-v8a.apk`
+- نسخه: `0.5.0-phase4-alpha11-auto-update (16)`
+- package: `com.foxconnect.app.debug`
+- ABI: فقط `arm64-v8a`
+- اندازه: `46,771,799` bytes
+- SHA-256: `83a154c8c3fdfafc4b6cdbaaa9838679ff96d93feb4d1786722cd6c0dd95bfec`
+- certificate SHA-256: `ffee4a25472705834a1fdb680fbae4ffce31e02d472fa7897765b767c307b709`
+- امضا: همان certificate آلفاهای ۷–۱۰، فقط APK Signature Scheme v2
+- ZIP/native alignment: 16 KiB؛ همهٔ ELF LOAD alignmentها: `0x4000`
+- source commit کد: `5b99457c993ac6e599d0932711bc76aa8f4471c3`
+- PR: `https://github.com/hojjatrad/FOXConnect/pull/2`
+- PR CI: `https://github.com/hojjatrad/FOXConnect/actions/runs/34108267225`
+- main CI: `https://github.com/hojjatrad/FOXConnect/actions/runs/34108620356`
+- artifact رسمی: `10013523726`؛ cloud ARM64 SHA-256 پیش از re-sign:
+  `f10247f6950464f9da3182a987578beb6c5408445bcd88a28095e32832bb7cef`
+
 ## APK آلفا ۱۰
 
 - انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.9-alpha10`
@@ -237,6 +263,11 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 
 ## اعتبارسنجی سبز
 
+- PR #2 با run `34108267225` و main با run `34108620356` برای آلفا ۱۱ موفق؛ checker
+  دقیق 1.14.0، ۱۰۱ متد تست JVM، lint و هر دو split diagnostic سبز
+- APK نهایی آلفا ۱۱: package/version/ABI، certificate ثابت، v2، zipalign 16 KiB، همهٔ
+  ELF LOADها `0x4000`، manifest fail-closed و scan credential تأیید شدند؛ `core/engine`
+  نسبت به آلفا ۱۰ تغییر نکرده است
 - PR run `34098538606` و main run `34098938303` برای آلفا ۱۰ موفق؛ checker رسمی دقیق
   1.14.0/revision اجباری و بدون skip، ۹۶ متد تست JVM، lint و split assembly سبز
 - APK نهایی آلفا ۱۰: package/version/ABI، certificate ثابت، v2، zipalign 16 KiB،
@@ -256,7 +287,7 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 - scan نهایی: بدون PAT/credential، endpoint fixture یا `OWNER/FOXConnect`
 - diff قطعی source در `core/engine/src` نسبت به آلفا ۷: صفر فایل
 
-## تست پذیرش دستگاه پس از انتشار آلفا ۱۰
+## تست پذیرش دستگاه پس از انتشار آلفا ۱۱
 
 1. CI باید unit tests، checker بومی اجباری، lint و هر دو split را سبز کند؛ ARM64 cloud
    artifact باید package/version/ABI/signature/alignment/hash gateها را پاس کند.
@@ -275,8 +306,11 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
    قطع صریح و لغو مجوز نباید خودکار دوباره وصل شوند.
 9. Connection Events باید connect/verified/switch/failure/kill-switch را بدون endpoint یا
    credential نشان دهد. نبود رویداد باید همراه زمان و logcat دسته‌ای ثبت شود.
-10. آزمون چندساعتهٔ پایداری و updater pre-release code 15 را بدون token اجرا کنید؛ دانلود و
-    installer فقط پس از اقدام کاربر و verification کامل مجازند.
+10. از آلفا ۱۰، pre-release code 16 را بدون token بررسی کنید: metadata background باید
+    پس از زمان‌بندی notification بدهد اما APK دانلود نشود؛ action اعلان باید UI را باز کند و
+    یک اقدام صریح، دانلود/verification و installer را آغاز کند. نصب نهایی را Android تأیید کند.
+11. آزمون چندساعتهٔ پایداری و failover را اجرا کنید؛ دانلود updater و installer فقط پس از
+    اقدام کاربر و verification کامل مجازند.
 
 ## build محلی کم‌حافظه
 
@@ -337,4 +371,4 @@ export SING_BOX_CHECK=/home/user/.cache/sing-box-1.14.0/sing-box
 - هیچ token، UUID، host، Reality key، URI، raw payload یا credential واقعی در
   source، fixture، log، docs، notification یا پاسخ وارد نشود.
 - هیچ updater نباید repository، certificate، package، ABI، version یا hash gate را قابل‌دورزدن کند.
-- آلفا ۷ از نظر اتصال/DNS/traffic روی دستگاه تأیید شد؛ آلفا ۸ updater و آلفا ۹ reliability منتشر شده‌اند؛ قابلیت‌های آلفا ۹ هنوز diagnostic و نیازمند آزمون فیزیکی طولانی‌مدت‌اند.
+- ادعای تاریخی تأیید آلفا ۷ با audit ابطال شده است؛ آلفا ۹ فیزیکی شکست خورد و آلفاهای ۱۰/۱۱ تا پذیرش واقعی updater و data path همچنان diagnostic هستند.
