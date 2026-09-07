@@ -1,6 +1,6 @@
 # FOXConnect
 
-> وضعیت: **فاز ۴ آلفا ۱۰ تشخیصی؛ build و آزمون فیزیکی در انتظار**
+> وضعیت: **فاز ۴ آلفا ۱۰ تشخیصی؛ CI سبز و آزمون فیزیکی در انتظار**
 > آلفا ۹ در آزمون دستگاه شکست خورد: `Connected` کاذب بود و مرورگر، برنامه‌ها، دانلود و
 > آپلود اینترنت نداشتند. history ثابت کرد `route.auto_detect_interface` در آلفاهای ۷ تا ۹
 > برخلاف مستندات خاموش مانده بود و نام profile در home نیز از preference قدیمی می‌آمد.
@@ -196,8 +196,8 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 
 ## محدودیت‌های فعلی
 
-- آلفا ۹ روی دستگاه با Connected کاذب و نبود کامل ترافیک شکست خورد؛ آلفا ۱۰ هنوز تا CI و آزمون همان دستگاه تأیید نشده است.
-- [آلفا ۹](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9) فقط به‌عنوان سابقهٔ build شکست‌خورده باقی مانده و نباید برای اتصال استفاده شود. لینک آلفا ۱۰ پس از gateهای GitHub افزوده می‌شود.
+- آلفا ۹ روی دستگاه با Connected کاذب و نبود کامل ترافیک شکست خورد؛ آلفا ۱۰ CI را پاس کرده اما تا آزمون همان دستگاه تأیید فیزیکی نشده است.
+- APK تشخیصی ARM64: [آلفا ۱۰](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.9-alpha10)؛ [دانلود مستقیم](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.4.9-alpha10/FOXConnect-v15-debug-arm64-v8a.apk)، SHA-256: `80ef15999d6cf135c26c4153d7f35a25ad67525a2c2ead8c3bc44aeabe2184ed`. آلفا ۹ فقط سابقهٔ build شکست‌خورده است.
 - build تشخیصی debug-signed است، نه release-signed؛ مهاجرت یک‌باره به `com.foxconnect.app` با backup رمز‌شده، نصب جدا و restore لازم است.
 - فرم ساختاریافتهٔ دستی فعلاً فقط برای VLESS است؛ بقیه از لینک یا فایل WireGuard import می‌شوند.
 - پذیرفته‌شدن JSON نمونه توسط CLI پین‌شده جای تست libbox بومی Android و سرور واقعی را نمی‌گیرد.
@@ -243,7 +243,8 @@ revision, and the generated-config schema test fails instead of skipping when th
 checker is unavailable. Production release publishing still uses only GitHub Secrets and
 the workflow's ephemeral `GITHUB_TOKEN`; no PAT is embedded.
 
-Alpha 10 remains a **diagnostic candidate, not a production release**, until GitHub CI
-passes and the same device/network validates browser and app traffic, DNS, upload,
-download, displayed active profile, several forced failovers, no-leak behavior, and
-sustained operation. See [HANDOFF.md](HANDOFF.md).
+Alpha 10 passed GitHub CI—including the mandatory native checker, 96 JVM test methods,
+lint, and both diagnostic splits—and is available as an [ARM64 diagnostic pre-release](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.9-alpha10).
+It remains **diagnostic, not production**, until the same device/network validates browser
+and app traffic, DNS, upload, download, displayed active profile, several forced failovers,
+no-leak behavior, and sustained operation. See [HANDOFF.md](HANDOFF.md).

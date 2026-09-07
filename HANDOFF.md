@@ -4,11 +4,11 @@
 
 ## وضعیت فعال
 
-نسخهٔ در حال تعمیر: **`0.4.9-phase4-alpha10-data-path`**، `versionCode=15`.
-سورس عمومی `main` در شروع این تعمیر `aafb0037ff3e67f3e9cb17480f6a9c14e777bfa4`
-بود. تغییرهای آلفا ۱۰ روی branch محلی `repair/alpha10-data-path` commit شده‌اند، اما push
-به‌علت نبود credential مجاز GitHub انجام نشد. تا push، عبور CI و release نباید منتشرشده
-یا تأییدشده تلقی شوند.
+نسخهٔ فعال: **`0.4.9-phase4-alpha10-data-path`**، `versionCode=15`.
+PR #1 در commit اصلی `847db5b2a35f242827c5e514259cbaed1c1da968` merge شد. GitHub Actions
+run `34098938303` با checker بومی اجباری، ۹۶ متد تست JVM، lint و هر دو split تشخیصی
+موفق شد. APK ARM64 با certificate تشخیصی ثابت دوباره امضا و در pre-release
+`diagnostic-v0.4.9-alpha10` منتشر شده است؛ پذیرش فیزیکی هنوز انجام نشده است.
 
 Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI موفق بود، اما در
 آزمون فیزیکی همان دستگاه/شبکه شکست خورد: UI وضعیت `Connected` داشت، endpoint pingها
@@ -102,7 +102,7 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
   با دو شکست روی ۹ ثانیه محدود است.
 - regression صریح مانع بازگشت ترکیب معیوب auto-route/auto-detect می‌شود.
 
-## تعمیرهای آلفا ۱۰ (در انتظار CI و دستگاه)
+## تعمیرهای آلفا ۱۰ (CI سبز؛ در انتظار دستگاه)
 
 - `SingBoxConfigFactory` اکنون `route.auto_detect_interface=true` تولید می‌کند و regression
   مشترک `auto_route`/`strict_route`/`final=proxy`/auto-detect افزوده شده است.
@@ -122,11 +122,10 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 - workflow checker رسمی sing-box 1.14.0 را با SHA-256
   `2375de6999f4f56ab46b4fc5ddf26a6aba1d3e61a0f4e7ddec2f4690457d5f63` و revision
   `0b8995879f29a9b98ee027bc17b75e101445b238` provision می‌کند؛ test دیگر skip نمی‌شود.
-- تلاش build محلی exact libbox روی sandbox 1.9 GiB RAM در مرحلهٔ `gobind` با signal killed
-  متوقف شد؛ این failure ناشی از کمبود حافظه است و نتیجهٔ compile/test کد آلفا ۱۰ نیست.
-- مرحلهٔ بعد: push branch با credential مجاز/تازه، PR CI، رفع هر compile/schema/lint failure،
-  merge به main، build GitHub، انتشار diagnostic alpha10 و سپس آزمون همان دستگاه/شبکه با browser/app،
-  DNS، upload/download، profile فعال، چند failover اجباری، no-leak و کارکرد پایدار.
+- PR #1 و run اصلی `34098938303` سبز شدند. build محلی exact libbox روی sandbox 1.9 GiB
+  در `gobind` کمبود حافظه داشت، اما cache پین‌شدهٔ GitHub AAR/API دقیق را compile و verify کرد.
+- مرحلهٔ بعد فقط پذیرش همان دستگاه/شبکه است: browser/app، DNS، upload/download، profile
+  فعال، چند failover اجباری، Connection Events، no-leak و کارکرد پایدار.
 
 ## gate قطعی config/native
 
@@ -166,7 +165,25 @@ import می‌شود و هر ۱۷ profile در repository باقی می‌مان
 - تست‌های policy/lifecycle برای ranking، freshness، جداسازی metric، hysteresis، cooldown،
   چهار تلاش و recovery مجاز اضافه شده‌اند و همراه کل suite و lint در CI پاس شدند.
 
-## APK آلفا ۹
+## APK آلفا ۱۰
+
+- انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.9-alpha10`
+- دانلود مستقیم: `https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.4.9-alpha10/FOXConnect-v15-debug-arm64-v8a.apk`
+- نسخه: `0.4.9-phase4-alpha10-data-path (15)`
+- package: `com.foxconnect.app.debug`
+- ABI: فقط `arm64-v8a`
+- اندازه: `46,771,799` bytes
+- SHA-256: `80ef15999d6cf135c26c4153d7f35a25ad67525a2c2ead8c3bc44aeabe2184ed`
+- certificate SHA-256: `ffee4a25472705834a1fdb680fbae4ffce31e02d472fa7897765b767c307b709`
+- امضا: همان certificate آلفاهای ۷–۹، فقط APK Signature Scheme v2
+- ZIP/native alignment: 16 KiB؛ libbox LOAD alignment: `0x4000`
+- source commit کد: `847db5b2a35f242827c5e514259cbaed1c1da968`
+- PR CI: `https://github.com/hojjatrad/FOXConnect/actions/runs/34098538606`
+- main CI: `https://github.com/hojjatrad/FOXConnect/actions/runs/34098938303`
+- artifact رسمی: `10009796390`؛ cloud ARM64 SHA-256 پیش از re-sign:
+  `741fa560854b25d4e8667aeaf56a197343f47b50b002a930f460af581b0d89ca`
+
+## APK آلفا ۹ — شکست‌خورده و فقط برای سابقه
 
 - انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9`
 - دانلود مستقیم: `https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.4.8-alpha9/FOXConnect-v14-debug-arm64-v8a.apk`
@@ -202,6 +219,10 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 
 ## اعتبارسنجی سبز
 
+- PR run `34098538606` و main run `34098938303` برای آلفا ۱۰ موفق؛ checker رسمی دقیق
+  1.14.0/revision اجباری و بدون skip، ۹۶ متد تست JVM، lint و split assembly سبز
+- APK نهایی آلفا ۱۰: package/version/ABI، certificate ثابت، v2، zipalign 16 KiB،
+  libbox LOAD `0x4000`، manifest fail-closed و scan credential تأیید شدند
 - GitHub Actions run `34091352252` روی commit `69876c73017913618be02f30580931503f3f1f29` موفق
 - ۸۳ test case موجود parser/storage/engine/updater، application lint و split assembly موفق
 - final ARM64: package/version/ABI، گواهی دقیق آلفا ۸، v2، zipalign 16 KiB، LOAD align

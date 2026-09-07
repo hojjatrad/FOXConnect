@@ -29,8 +29,10 @@
   `2375de6999f4f56ab46b4fc5ddf26a6aba1d3e61a0f4e7ddec2f4690457d5f63` و revision
   `0b8995879f29a9b98ee027bc17b75e101445b238` را نصب و نبود/mismatch آن را fail می‌کند.
 - regressionهای route/protect evidence، پاسخ HTTPS، candidate runtime، failover budget،
-  event persistence و native traffic افزوده و `versionCode` به 15 ارتقا یافت. انتشار و
-  پذیرش این نسخه تا CI و آزمون فیزیکی browser/app/DNS/upload/download/failover معلق است.
+  event persistence و native traffic افزوده و `versionCode` به 15 ارتقا یافت.
+- PR #1 و run اصلی GitHub Actions `34098938303` با checker بومی اجباری، ۹۶ متد تست JVM،
+  lint و هر دو split تشخیصی سبز شدند. APK ARM64 با گواهی تشخیصی ثابت دوباره امضا و در
+  pre-release `diagnostic-v0.4.9-alpha10` منتشر شد؛ پذیرش فقط تا آزمون فیزیکی معلق است.
 - **تصحیح سابقه:** توضیحات آلفا ۷ در پایین این فایل ادعا کرده بود auto-detect و چند کنترل
   data path اصلاح شده‌اند؛ history مخزن ثابت کرد آن ادعاها با سورس/باینری آلفا ۷ تا ۹
   منطبق نبودند. این اصلاح‌ها برای نخستین بار در همین آلفا ۱۰ اعمال می‌شوند.
