@@ -143,6 +143,36 @@ export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.0.13004108"
 10. refresh خودکار subscription، process death، reboot، لغو مجوز، قطع شبکه،
    تنظیمات، QS tile و ویرایش/حذف پروفایل انتخاب‌شده را تست کنید.
 
+## به‌روزرسانی امن از GitHub
+
+مخزن رسمی ثابت برنامه `https://github.com/hojjatrad/FOXConnect` است. بررسی دستی از
+Settings در دسترس است؛ بررسی دوره‌ای ۲۴ ساعته پیش‌فرض خاموش است و فقط با انتخاب کاربر
+فعال می‌شود. کانال پایدار پیش‌فرض است و پیش‌انتشارها نیز اختیاری‌اند.
+
+بررسی پس‌زمینه فقط metadata عمومی GitHub را با HTTPS دریافت و در صورت وجود نسخهٔ
+جدید notification نشان می‌دهد؛ APK هرگز در پس‌زمینه دانلود یا نصب نمی‌شود. دانلود فقط
+پس از لمس دکمهٔ کاربر انجام می‌شود. پیش از تحویل به نصب‌کنندهٔ Android، updater این
+موارد را fail-closed کنترل می‌کند: مخزن/URL رسمی، محدودیت اندازه، versionCode جدیدتر،
+ABI تک‌معماری سازگار، فایل SHA-256 همراه، hash واقعی، application ID و گواهی امضای
+یکسان با برنامهٔ نصب‌شده. نصب نهایی همیشه به تأیید سیستم Android نیاز دارد.
+
+قرارداد asset برای نسخهٔ production:
+
+```text
+FOXConnect-v<versionCode>-arm64-v8a.apk
+FOXConnect-v<versionCode>-arm64-v8a.apk.sha256
+FOXConnect-v<versionCode>-armeabi-v7a.apk
+FOXConnect-v<versionCode>-armeabi-v7a.apk.sha256
+SHA256SUMS
+```
+
+کلید Release در Git نگهداری نمی‌شود. workflow فقط از GitHub Secrets با نام‌های
+`FOXCONNECT_KEYSTORE_BASE64`، `FOXCONNECT_SIGNING_KEY_ALIAS`،
+`FOXCONNECT_SIGNING_KEY_PASSWORD`، `FOXCONNECT_SIGNING_STORE_PASSWORD` و
+`FOXCONNECT_SIGNING_CERT_SHA256` استفاده می‌کند و انتشار را با `GITHUB_TOKEN` موقت
+و محدود همان اجرا انجام می‌دهد. PAT در APK، سورس یا workflow وجود ندارد. روش ساخت کلید،
+Secrets و مهاجرت یک‌باره در [docs/RELEASE.md](docs/RELEASE.md) مستند شده است.
+
 ## حریم خصوصی
 
 FOXConnect analytics، تبلیغات یا telemetry ندارد. داده فقط به این مقصدها می‌رود:
@@ -150,7 +180,7 @@ FOXConnect analytics، تبلیغات یا telemetry ندارد. داده فقط
 1. gateway و subscription HTTPS که خود کاربر وارد کرده است؛
 2. ارائه‌دهندهٔ DNS امن انتخاب‌شده و چند endpoint عمومی مستقل با TLS معتبر برای
    health check؛ همچنین سرویس best-effort نمایش IP/کد کشور خروجی؛
-3. GitHub فقط پس از پیاده‌سازی updater در فاز ۶.
+3. API عمومی و assetهای Release مخزن ثابت GitHub، فقط هنگام بررسی یا دانلودی که کاربر فعال کرده است.
 
 TLS ناامن، trust-all یا downgrade به HTTP وجود ندارد. profile vault و active
 engine config هر دو جداگانه با AES-GCM/Android Keystore رمز می‌شوند. backup
@@ -160,8 +190,8 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 
 ## محدودیت‌های فعلی
 
-- آلفا ۶ روی دستگاه TUN را شروع کرد، اما verification ترافیک شکست خورد؛ اصلاح route/socket آلفا ۷ هنوز روی همان دستگاه تأیید نشده است.
-- APK فعلی debug-signed است، نه release-signed.
+- اتصال واقعی، DNS و عبور ترافیک آلفا ۷ روی دستگاه تأیید شده است؛ آلفا ۸ باید جداگانه روی همان دستگاه regression شود.
+- APK فعلی debug-signed است، نه release-signed؛ مهاجرت یک‌باره به `com.foxconnect.app` با backup رمز‌شده، نصب جدا و restore لازم است.
 - فرم ساختاریافتهٔ دستی فعلاً فقط برای VLESS است؛ بقیه از لینک یا فایل WireGuard import می‌شوند.
 - پذیرفته‌شدن JSON نمونه توسط CLI پین‌شده جای تست libbox بومی Android و سرور واقعی را نمی‌گیرد.
 - refresh زمان‌بندی‌شده و backup/restore روی JVM تست شده‌اند، اما اجرای واقعی
@@ -170,7 +200,7 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
   ۱۰ ثانیه و جلوگیری از نشت فقط پس از آزمون دستگاه قابل تأیید است.
 - محافظ داخلی جای lockdown سیستم را نمی‌گیرد؛ کاربر باید «Block connections without
   VPN» اندروید را برای حفاظت در برابر force-stop فعال کند.
-- فرم‌های دستی غیر VLESS، split tunnel، DNS/rules و updater هنوز باقی مانده‌اند.
+- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ updater آلفا ۸ تا build/CI و تست دستگاه diagnostic است.
 
 ## License
 
@@ -194,8 +224,15 @@ never connects, and every service start requires fresh user/explicit-boot author
 
 The supplied subscription path remains regression-tested: GZIP/Base64 decoding,
 17 VLESS imports, encrypted persistence and visible refresh are preserved without
-including any user endpoint or credential in source or diagnostics. This is a
-**debug-signed diagnostic device-test build, not a production release**. Compilation,
-unit tests, lint, ABI, signing and 16 KiB native alignment pass, but installation,
-actual connection, UI survival under native failure, and leak/failover behavior must
-still be confirmed on the physical device. See [HANDOFF.md](HANDOFF.md).
+including any user endpoint or credential in source or diagnostics. Alpha 7 real
+connectivity was physically confirmed.
+
+Alpha 8 adds a token-free updater pinned to `hojjatrad/FOXConnect`: manual checks,
+opt-in 24-hour metadata-only checks, optional pre-releases, user-approved downloads,
+bounded strict-HTTPS transfers, companion SHA-256 verification, and APK package,
+newer-version, single-ABI and installed-certificate verification before Android's
+user-controlled installer opens. Production releases are built from GitHub Secrets
+and published only with the workflow's ephemeral `GITHUB_TOKEN`; no PAT is embedded.
+This remains a **debug-signed diagnostic device-test build, not a production release**
+until the new Release-key migration and physical regression are completed. See
+[HANDOFF.md](HANDOFF.md).

@@ -1,5 +1,26 @@
 # تغییرات FOXConnect
 
+## 0.4.7-phase4-alpha8-updater — 2026-09-07
+
+- ثبت تأیید فیزیکی آلفا ۷: اتصال واقعی، DNS و عبور ترافیک پس از اصلاح route برقرار شد
+- عمومی‌شدن مخزن رسمی `hojjatrad/FOXConnect` و انتشار آلفا ۷ به‌صورت Pre-release
+  تشخیصی با APK، checksum companion، SHA256SUMS و verification metadata
+- افزودن بررسی دستی update و بررسی دوره‌ای ۲۴ ساعتهٔ opt-in؛ worker فقط metadata را
+  می‌گیرد و هرگز APK را در پس‌زمینه دانلود یا نصب نمی‌کند
+- افزودن کانال پایدار پیش‌فرض و opt-in پیش‌انتشار، UI و خطاهای کامل فارسی/انگلیسی و
+  notification قابل‌کنترل از همان switch دوره‌ای
+- پین‌کردن updater به repository رسمی، HTTPS سخت‌گیرانه، host/redirect allowlist، سقف
+  ۵۱۲ KiB metadata، ۴ KiB checksum و ۱۲۰ MiB APK و محدودیت تعداد release/asset
+- الزام versionCode جدیدتر، asset تک‌معماری سازگار، checksum companion، SHA-256 واقعی،
+  application ID یکسان و گواهی امضای یکسان با برنامهٔ نصب‌شده پیش از installer handoff
+- دانلود فقط با دکمهٔ کاربر، نگهداری موقت در cache محدود FileProvider و نصب فقط از مسیر
+  نصب‌کنندهٔ Android؛ دانلود/نصب silent وجود ندارد
+- افزودن پیکربندی Release key فقط از environment/GitHub Secrets و workflow fail-closed
+  برای build بومی، test/lint، splitهای امضاشده، cert/hash/ABI/alignment gate و انتشار با
+  `GITHUB_TOKEN` موقت؛ هیچ PAT یا secret در سورس نیست
+- حفظ کامل رفتار connectivity آلفا ۷؛ هیچ فایل engine/routing در این مرحله تغییر نکرد
+- ارتقای versionCode به 13؛ build و updater هنوز تا عبور CI و تست دستگاه diagnostic است
+
 ## 0.4.6-phase4-alpha7-diagnostic — 2026-09-06
 
 - ثبت نتیجهٔ فیزیکی آلفا ۶: setup، command server و Android TUN با موفقیت شروع شدند،

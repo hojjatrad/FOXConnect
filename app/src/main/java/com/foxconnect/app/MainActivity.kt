@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,13 @@ import com.foxconnect.app.ui.ProfilesScreen
 import com.foxconnect.app.ui.SettingsDialog
 import com.foxconnect.app.ui.SubscriptionDialog
 import com.foxconnect.app.ui.VlessEditorDialog
+import com.foxconnect.app.update.InstallHandoff
+import com.foxconnect.app.update.UpdateCheckResult
+import com.foxconnect.app.update.UpdateInstaller
+import com.foxconnect.app.update.UpdatePreferences
+import com.foxconnect.app.update.UpdatePreparationResult
+import com.foxconnect.app.update.UpdateRepository
+import com.foxconnect.app.update.UpdateUiState
 import com.foxconnect.core.engine.AndroidTunnelController
 import com.foxconnect.core.engine.FoxVpnService
 import com.foxconnect.core.engine.ProfileHealthStore
@@ -74,8 +82,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var profiles: ProfileRepository
     private lateinit var profileHealthStore: ProfileHealthStore
     private lateinit var tunnelEventLog: TunnelEventLog
+    private lateinit var updateRepository: UpdateRepository
     private val destination = MutableStateFlow(Destination.HOME)
     private val backupRequest = MutableStateFlow<BackupRequest?>(null)
+    private val showUpdateSettingsRequest = MutableStateFlow(false)
     private var permissionPendingConnection: PendingConnection? = null
     private var notificationPendingConnection: PendingConnection? = null
 
@@ -94,6 +104,9 @@ class MainActivity : AppCompatActivity() {
             notificationPendingConnection?.let(::requestVpnPermission)
             notificationPendingConnection = null
         }
+
+    private val updateNotificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     private val fileLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -163,6 +176,11 @@ class MainActivity : AppCompatActivity() {
         profiles = (application as FoxConnectApplication).profileRepository
         profileHealthStore = ProfileHealthStore(this)
         tunnelEventLog = TunnelEventLog(this)
+        updateRepository = UpdateRepository(this)
+        if (intent?.action == ACTION_SHOW_UPDATE_SETTINGS) {
+            showUpdateSettingsRequest.value = true
+            intent.action = null
+        }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (destination.value != Destination.HOME) {
@@ -180,6 +198,7 @@ class MainActivity : AppCompatActivity() {
                 val repositoryState by profiles.state.collectAsStateWithLifecycle()
                 val currentDestination by destination.collectAsStateWithLifecycle()
                 val currentBackupRequest by backupRequest.collectAsStateWithLifecycle()
+                val shouldShowUpdateSettings by showUpdateSettingsRequest.collectAsStateWithLifecycle()
                 val connectableProfiles = remember(repositoryState.profiles) {
                     repositoryState.profiles.mapNotNull { it.toConnectableProfile() }
                 }
@@ -204,7 +223,17 @@ class MainActivity : AppCompatActivity() {
                 var editorTarget by remember { mutableStateOf<ManagedProfile?>(null) }
                 var subscriptionVisible by remember { mutableStateOf(false) }
                 var settingsVisible by remember { mutableStateOf(false) }
+                var updateState by remember { mutableStateOf<UpdateUiState>(UpdateUiState.Idle) }
                 var deleteTarget by remember { mutableStateOf<ManagedProfile?>(null) }
+
+                LaunchedEffect(shouldShowUpdateSettings) {
+                    if (shouldShowUpdateSettings) {
+                        settingsVisible = true
+                        updateState = UpdateUiState.Checking
+                        updateState = checkForUpdates(UpdatePreferences.includePrereleases(this@MainActivity))
+                        showUpdateSettingsRequest.value = false
+                    }
+                }
 
                 when (currentDestination) {
                     Destination.HOME -> HomeScreen(
@@ -367,14 +396,57 @@ class MainActivity : AppCompatActivity() {
                 if (settingsVisible) {
                     SettingsDialog(
                         initial = loadProductSettings(),
+                        updateState = updateState,
                         onDismiss = { settingsVisible = false },
                         onSave = { value ->
                             saveProductSettings(value)
+                            if (
+                                value.periodicUpdateChecks &&
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(
+                                    this,
+                                    Manifest.permission.POST_NOTIFICATIONS,
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                updateNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
                             settingsVisible = false
                             toast(R.string.settings_saved)
                         },
                         onOpenSystemVpnSettings = {
                             runCatching { startActivity(Intent(android.provider.Settings.ACTION_VPN_SETTINGS)) }
+                        },
+                        onCheckForUpdates = { includePrereleases ->
+                            if (updateState !is UpdateUiState.Checking && updateState !is UpdateUiState.Downloading) {
+                                updateState = UpdateUiState.Checking
+                                lifecycleScope.launch {
+                                    updateState = checkForUpdates(includePrereleases)
+                                }
+                            }
+                        },
+                        onDownloadUpdate = {
+                            val update = (updateState as? UpdateUiState.Available)?.update
+                            if (update != null) {
+                                updateState = UpdateUiState.Downloading(update)
+                                lifecycleScope.launch {
+                                    updateState = when (val result = updateRepository.downloadAndVerify(update)) {
+                                        is UpdatePreparationResult.Ready ->
+                                            UpdateUiState.Ready(result.update, result.apkPath)
+                                        is UpdatePreparationResult.Failure ->
+                                            UpdateUiState.Failed(result.reason)
+                                    }
+                                }
+                            }
+                        },
+                        onInstallUpdate = {
+                            val ready = updateState as? UpdateUiState.Ready
+                            if (ready != null) {
+                                when (UpdateInstaller.handOff(this, ready.apkPath)) {
+                                    InstallHandoff.Started -> Unit
+                                    InstallHandoff.PermissionRequired -> toast(R.string.update_install_permission)
+                                    InstallHandoff.Failed -> toast(R.string.update_install_failed)
+                                }
+                            }
                         },
                     )
                 }
@@ -417,7 +489,12 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        consumeImportIntent(intent)
+        if (intent.action == ACTION_SHOW_UPDATE_SETTINGS) {
+            showUpdateSettingsRequest.value = true
+            intent.action = null
+        } else {
+            consumeImportIntent(intent)
+        }
     }
 
     private fun startBackupExport() {
@@ -707,6 +784,8 @@ class MainActivity : AppCompatActivity() {
             killSwitchEnabled = preferences.getBoolean(FoxVpnService.KEY_KILL_SWITCH_ENABLED, true),
             cooldownSeconds = (preferences.getLong(FoxVpnService.KEY_FAILOVER_COOLDOWN_MS, 60_000) / 1_000)
                 .toInt().coerceIn(30, 120),
+            periodicUpdateChecks = UpdatePreferences.periodicChecks(this),
+            includePrereleases = UpdatePreferences.includePrereleases(this),
         )
     }
 
@@ -718,7 +797,19 @@ class MainActivity : AppCompatActivity() {
             .putBoolean(FoxVpnService.KEY_KILL_SWITCH_ENABLED, value.killSwitchEnabled)
             .putLong(FoxVpnService.KEY_FAILOVER_COOLDOWN_MS, value.cooldownSeconds * 1_000L)
             .apply()
+        UpdatePreferences.savePolicy(
+            this,
+            periodic = value.periodicUpdateChecks,
+            prereleases = value.includePrereleases,
+        )
     }
+
+    private suspend fun checkForUpdates(includePrereleases: Boolean): UpdateUiState =
+        when (val result = updateRepository.check(includePrereleases)) {
+            is UpdateCheckResult.Available -> UpdateUiState.Available(result.update)
+            is UpdateCheckResult.Failure -> UpdateUiState.Failed(result.reason)
+            UpdateCheckResult.UpToDate -> UpdateUiState.UpToDate
+        }
 
     private fun showComingSoon() = toast(R.string.coming_phase)
 
@@ -737,9 +828,10 @@ class MainActivity : AppCompatActivity() {
         data class Restore(val uri: Uri) : BackupRequest
     }
 
-    private companion object {
-        const val MAX_IMPORT_BYTES = 2 * 1024 * 1024
-        const val BACKUP_MIME_TYPE = "application/vnd.foxconnect.backup"
-        const val AUTO_CONNECT_KEY = "auto_connect"
+    companion object {
+        const val ACTION_SHOW_UPDATE_SETTINGS = "com.foxconnect.app.action.SHOW_UPDATE_SETTINGS"
+        private const val MAX_IMPORT_BYTES = 2 * 1024 * 1024
+        private const val BACKUP_MIME_TYPE = "application/vnd.foxconnect.backup"
+        private const val AUTO_CONNECT_KEY = "auto_connect"
     }
 }

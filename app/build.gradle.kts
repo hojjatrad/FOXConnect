@@ -3,6 +3,17 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val releaseKeystorePath = providers.environmentVariable("FOXCONNECT_SIGNING_KEYSTORE").orNull
+val releaseKeyAlias = providers.environmentVariable("FOXCONNECT_SIGNING_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("FOXCONNECT_SIGNING_KEY_PASSWORD").orNull
+val releaseStorePassword = providers.environmentVariable("FOXCONNECT_SIGNING_STORE_PASSWORD").orNull
+val releaseSigningReady = listOf(
+    releaseKeystorePath,
+    releaseKeyAlias,
+    releaseKeyPassword,
+    releaseStorePassword,
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.foxconnect.app"
     compileSdk = 37
@@ -11,10 +22,10 @@ android {
         applicationId = "com.foxconnect.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.4.6-phase4-alpha7-diagnostic"
+        versionCode = 13
+        versionName = "0.4.7-phase4-alpha8-updater"
 
-        buildConfigField("String", "GITHUB_REPOSITORY", "\"OWNER/FOXConnect\"")
+        buildConfigField("String", "GITHUB_REPOSITORY", "\"hojjatrad/FOXConnect\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -22,12 +33,34 @@ android {
         localeFilters += listOf("fa", "en")
     }
 
+    signingConfigs {
+        if (releaseSigningReady) {
+            create("productionRelease") {
+                storeFile = file(requireNotNull(releaseKeystorePath))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
+
     buildTypes {
-        debug { applicationIdSuffix = ".debug" }
+        debug {
+            applicationIdSuffix = ".debug"
+            buildConfigField("String", "UPDATE_ASSET_CHANNEL", "\"debug\"")
+        }
         release {
+            buildConfigField("String", "UPDATE_ASSET_CHANNEL", "\"release\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("productionRelease")
+            }
         }
     }
 
@@ -75,6 +108,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.zxing.core)
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)

@@ -1,0 +1,142 @@
+name: Verify and release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: foxconnect-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '17'
+  GO_VERSION: '1.27.1'
+  NDK_VERSION: '28.0.13004108'
+
+jobs:
+  verify-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install pinned Android toolchain
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
+      - name: Build and verify pinned libbox
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/${NDK_VERSION}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          ./scripts/build-libbox.sh
+          ./scripts/verify-libbox.sh
+      - name: Unit tests and lint
+        run: ./gradlew --no-daemon --max-workers=1 testDebugUnitTest lintDebug --stacktrace
+      - name: Build diagnostic split APKs
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: ./gradlew --no-daemon --max-workers=1 assembleDebug --stacktrace
+      - name: Upload diagnostic build artifacts
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: FOXConnect-diagnostic-${{ github.sha }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Build signed production splits
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.FOXCONNECT_KEYSTORE_BASE64 }}
+          FOXCONNECT_SIGNING_KEY_ALIAS: ${{ secrets.FOXCONNECT_SIGNING_KEY_ALIAS }}
+          FOXCONNECT_SIGNING_KEY_PASSWORD: ${{ secrets.FOXCONNECT_SIGNING_KEY_PASSWORD }}
+          FOXCONNECT_SIGNING_STORE_PASSWORD: ${{ secrets.FOXCONNECT_SIGNING_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          test -n "$KEYSTORE_BASE64"
+          test -n "$FOXCONNECT_SIGNING_KEY_ALIAS"
+          test -n "$FOXCONNECT_SIGNING_KEY_PASSWORD"
+          test -n "$FOXCONNECT_SIGNING_STORE_PASSWORD"
+          export FOXCONNECT_SIGNING_KEYSTORE="$RUNNER_TEMP/foxconnect-release.jks"
+          trap 'rm -f "$FOXCONNECT_SIGNING_KEYSTORE"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$FOXCONNECT_SIGNING_KEYSTORE"
+          chmod 600 "$FOXCONNECT_SIGNING_KEYSTORE"
+          ./gradlew --no-daemon --max-workers=1 assembleRelease --stacktrace
+      - name: Verify and stage production assets
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          EXPECTED_CERT_SHA256: ${{ secrets.FOXCONNECT_SIGNING_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          test -n "$EXPECTED_CERT_SHA256"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          ZIPALIGN="$(find "$ANDROID_HOME/build-tools" -type f -name zipalign | sort -V | tail -1)"
+          mkdir -p release-assets
+          : > release-assets/SHA256SUMS
+          expected_cert="$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d ':[:space:]' | tr 'A-F' 'a-f')"
+          test "${#expected_cert}" -eq 64
+          for abi in arm64-v8a armeabi-v7a; do
+            source_apk="app/build/outputs/apk/release/app-${abi}-release.apk"
+            test -f "$source_apk"
+            badging="$($AAPT dump badging "$source_apk")"
+            package_name="$(printf '%s\n' "$badging" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+            version_code="$(printf '%s\n' "$badging" | sed -n "s/^package:.*versionCode='\([^']*\)'.*/\1/p")"
+            test "$package_name" = 'com.foxconnect.app'
+            test "$version_code" -gt 0
+            target="release-assets/FOXConnect-v${version_code}-${abi}.apk"
+            cp "$source_apk" "$target"
+            "$APKSIGNER" verify --verbose --print-certs "$target" > "$RUNNER_TEMP/apksigner.txt"
+            actual_cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/apksigner.txt" | head -1 | tr -d ':[:space:]' | tr 'A-F' 'a-f')"
+            test "$actual_cert" = "$expected_cert"
+            "$ZIPALIGN" -c -P 16 -v 4 "$target"
+            native_entry="lib/${abi}/libbox.so"
+            test "$(unzip -Z1 "$target" | grep -E '^lib/[^/]+/libbox\.so$')" = "$native_entry"
+            (cd release-assets && sha256sum "$(basename "$target")" | tee "$(basename "$target").sha256" >> SHA256SUMS)
+          done
+          rm -f "$RUNNER_TEMP/apksigner.txt"
+      - name: Upload verified production assets
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: FOXConnect-release-${{ github.ref_name }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-release:
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: verify-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: FOXConnect-release-${{ github.ref_name }}
+          path: release-assets
+      - name: Publish with the ephemeral GitHub Actions token
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prerelease=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then prerelease=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --generate-notes \
+            "${prerelease[@]}"

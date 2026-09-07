@@ -180,16 +180,32 @@ export SING_BOX_CHECK=/home/user/.cache/sing-box-1.14.0/sing-box
   :app:assembleDebug
 ```
 
+## وضعیت updater / GitHub
+
+- مخزن `https://github.com/hojjatrad/FOXConnect` در 2026-09-07 عمومی شد.
+- سورس تمیز آلفا ۷ روی `main` با commit `4e2988b5b354e6e1223080e45589862df57a6c93` قرار گرفت.
+- Pre-release عمومی آلفا ۷ در `https://github.com/hojjatrad/FOXConnect/releases/tag/v0.4.6-alpha7`
+  شامل APK تأییدشده، checksum companion، SHA256SUMS و VERIFICATION است؛ digest منتشرشدهٔ
+  GitHub برای APK دقیقاً `93dd2b7895a13b0262015262032ac0b9300d8251ebaba513ed7bd9190513d3e4` است.
+- آلفا ۸ با versionCode 13 updater بدون token، manual + periodic opt-in، stable/pre-release،
+  notification، download دستی و verification کامل قبل از Android installer را اضافه می‌کند.
+- فایل workflow production آماده است، اما push آن scope `workflow` می‌خواهد. دو refresh
+  یک‌بارمصرف پس از تأیید کاربر هنگام دریافت پاسخ GitHub با network reset شکست خوردند؛
+  login تازه با scope workflow باید پس از آماده‌شدن commit امتحان شود.
+- build آلفا ۸ هنوز اجرا نشده است: AAR پین‌شدهٔ cache محیط پاک شده و build باید در GitHub
+  Actions با ساخت رسمی libbox انجام شود یا toolchain/AAR دقیق محلی بازگردانده شود.
+- کلید Production هنوز باید خارج از chat ساخته و پنج GitHub Secret مستندشده تنظیم شود.
+
 ## قواعد ثابت
 
 - پیش از هر build جدید، APKها و metadata قدیمی، build outputها، cacheها و فایل‌های موقت پاک شوند؛ فقط آخرین APK، checksum و ZIP منبع نگه داشته شود.
 - سورس نهایی در repository و APK/checksum در GitHub Releases نگهداری شوند تا workspace انباشته نشود.
 - `build/`، cache، `libbox.aar` محلی، keystore، رمز، PAT و هر secret دیگر هرگز commit، archive یا release نشوند.
-- مخزن اعلام‌شده `https://github.com/hojjatrad/FOXConnect` در 2026-09-07 از صفحه و API عمومی GitHub پاسخ 404 داشت؛ push/updater تا ایجاد یا Public‌شدن آن قابل نهایی‌سازی نیست.
+- مخزن رسمی و عمومی ثابت فقط `https://github.com/hojjatrad/FOXConnect` است؛ update feed عمومی هیچ tokenی ندارد.
 - نام `FOXConnect`، شناسه release `com.foxconnect.app` و مجوز AGPL-3.0.
 - فارسی پیش‌فرض RTL و انگلیسی LTR؛ همهٔ متن UI localized.
 - بدون root، تبلیغات، telemetry، TLS bypass، دادهٔ ساختگی یا ادعای Connected کاذب.
 - هیچ token، UUID، host، Reality key، URI، raw payload یا credential واقعی در
   source، fixture، log، docs، notification یا پاسخ وارد نشود.
-- GitHub updater تا دریافت `OWNER/REPO` واقعی باز است.
-- آلفا ۷ تا تأیید اتصال، DNS/traffic، توقف و failover روی دستگاه فقط diagnostic است.
+- هیچ updater نباید repository، certificate، package، ABI، version یا hash gate را قابل‌دورزدن کند.
+- آلفا ۷ از نظر اتصال/DNS/traffic روی دستگاه تأیید شد؛ توقف/failover کامل و تمام قابلیت‌های آلفا ۸ همچنان diagnostic و نیازمند آزمون‌اند.

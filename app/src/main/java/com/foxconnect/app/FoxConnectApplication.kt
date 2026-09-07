@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.core.os.LocaleListCompat
 import com.foxconnect.app.importer.SubscriptionRefreshScheduler
+import com.foxconnect.app.update.UpdateCheckScheduler
 import com.foxconnect.core.engine.TunnelEmergencyStop
 import com.foxconnect.core.engine.TunnelRuntimeObserver
 import com.foxconnect.core.storage.EncryptedProfileStore
@@ -38,6 +39,7 @@ class FoxConnectApplication : Application() {
         profileRepository = ProfileRepository(EncryptedProfileStore(this), applicationScope)
         TunnelRuntimeObserver(this, applicationScope).start()
         SubscriptionRefreshScheduler.schedule(this)
+        UpdateCheckScheduler.sync(this)
     }
 
     private fun installUiCrashStop() {

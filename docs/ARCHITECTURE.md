@@ -230,6 +230,33 @@ UDP/QUIC-only configurations remain unavailable instead of receiving inferred va
 The event log stores only bounded timestamps and enum codes. It cannot contain profile names, URLs, endpoints,
 raw config or exception messages.
 
+## Token-free update boundary
+
+The update subsystem is isolated under `app/update` and has no dependency on the VPN
+engine or profile vault. `UpdateRepository` reads at most ten public releases from the
+compile-time repository `hojjatrad/FOXConnect`; no runtime repository override or token
+exists. `StrictHttpsClient` requires HTTPS, default platform certificate/hostname
+validation, bounded responses, a fixed GitHub host allowlist and at most five HTTPS
+redirects. It never accepts cleartext fallback.
+
+Release selection requires a newer integer versionCode in the exact ABI-specific asset
+name. Stable is the default policy; pre-releases are opt-in. `UpdateCheckWorker` is also
+opt-in, runs at a 24-hour interval under a connected-network constraint, reads metadata
+only and can only post a localized notification. It cannot download or install.
+
+A foreground user action fetches the exact companion `.sha256`, validates any GitHub API
+digest, streams the APK into a size-bounded cache file while hashing, then validates the
+archive application ID, exact/newer versionCode, single compatible ABI and current
+installed signing-certificate set. Failure deletes the file. A non-exported FileProvider
+exposes only `cache/verified-updates/`; a second user action hands the verified APK to the
+Android package installer, which retains final user approval. There is no silent-install API.
+
+Production signing configuration exists only when all four release-key environment
+variables are present. The release workflow rebuilds the pinned native AAR, runs tests and
+lint, signs split APKs from GitHub Secrets, compares the signer certificate with its pinned
+secret, checks package/ABI/16-KiB ZIP alignment, emits companion hashes and lets only a
+separate `contents: write` job publish with the ephemeral `GITHUB_TOKEN`.
+
 ## Native artifact
 
 The AAR is built from sing-box v1.14.0 at exact commit
@@ -251,4 +278,5 @@ API inspection and physical-device regression.
 - Watchdog recovery time and in-service leak guard need adversarial device tests;
   system-equivalent lockdown still depends on the Android Always-on VPN setting.
 - Full measured ranking needs observations for each profile; unknown latency remains unknown.
-- Structured forms beyond VLESS, split tunnel/DNS/rules and updater remain open.
+- Structured forms beyond VLESS and split tunnel/DNS/rules remain open.
+- The updater and GitHub release workflow require CI compilation plus physical checks of manual/periodic policy, notification permission, hash/signature rejection and Android installer handoff.
