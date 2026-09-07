@@ -69,3 +69,29 @@ SHA-256 files and publishes the GitHub Release with the ephemeral Actions token.
 Do not manually replace an asset under an existing tag. Publish a higher versionCode in a
 new release. Keep pre-release status for diagnostic channels; production clients ignore
 pre-releases unless the user explicitly opts in.
+
+## 5. Publish a locally re-signed diagnostic build
+
+The persistent diagnostic key must remain local and must never become a GitHub Secret.
+Download the ARM64 APK only from a successful mandatory main-branch Actions run, verify
+its package/version/ABI/alignment, and re-sign it locally with the existing diagnostic
+certificate. Prepare exactly these four public assets:
+
+```text
+FOXConnect-v<versionCode>-debug-arm64-v8a.apk
+FOXConnect-v<versionCode>-debug-arm64-v8a.apk.sha256
+SHA256SUMS
+VERIFICATION.txt
+```
+
+Push an annotated `diagnostic-v<version>-alpha<number>` tag, then create a **private draft**
+pre-release and upload those four assets. A draft is only staging and is not public.
+Run **Publish verified diagnostic draft** with the exact tag, version code, and lowercase
+APK SHA-256. The workflow checks the annotated tag and main ancestry, exact asset set,
+checksums, verification metadata, debug package, version, ARM64-only payload, v2-only
+signature, persistent diagnostic certificate, 16 KiB ZIP alignment, and credential
+patterns. Only after every gate passes does its run-scoped `${{ github.token }}` change
+the draft to a public pre-release. Any mismatch leaves the draft private.
+
+Delete the failed draft rather than replacing assets after a verification failure. Create
+a fresh draft and always use a higher versionCode for any APK content change.
