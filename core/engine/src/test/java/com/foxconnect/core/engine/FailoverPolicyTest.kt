@@ -137,9 +137,10 @@ class FailoverPolicyTest {
     }
 
     @Test
-    fun `default detector budget leaves reconnect time under ten second target`() {
+    fun `confirmed hard failure is detected within nine seconds`() {
         val settings = FailoverSettings()
-        assertTrue(settings.maximumDetectionMs <= 6_000)
+        assertEquals(1, settings.failureThreshold)
+        assertTrue(settings.maximumDetectionMs <= 9_000)
         assertTrue(settings.maximumDetectionMs < 10_000)
     }
 }

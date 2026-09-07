@@ -34,6 +34,30 @@ class CoreFailureClassifierTest {
     }
 
     @Test
+    fun `missing protected upstream observation is a socket protection failure`() {
+        assertEquals(
+            "socket_protection_failed",
+            CoreFailureClassifier.classify(IllegalStateException("socket_protection_not_observed")),
+        )
+    }
+
+    @Test
+    fun `missing native bidirectional traffic rejects tunnel verification`() {
+        assertEquals(
+            "tunnel_verification_failed",
+            CoreFailureClassifier.classify(IllegalStateException("native_traffic_not_observed")),
+        )
+    }
+
+    @Test
+    fun `missing physical network observation is a network monitor failure`() {
+        assertEquals(
+            "core_network_monitor_failed",
+            CoreFailureClassifier.classify(IllegalStateException("physical_network_not_observed")),
+        )
+    }
+
+    @Test
     fun `unknown errors remain generic`() {
         assertEquals("native_start_failed", CoreFailureClassifier.classify(IllegalStateException()))
     }

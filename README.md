@@ -1,11 +1,12 @@
 # FOXConnect
 
-> وضعیت: **فاز ۴ آلفا ۷ تشخیصی، آمادهٔ آزمون data path روی ARM64**
-> آلفا ۶ روی دستگاه libbox و Android TUN را با موفقیت شروع کرد، اما ترافیک امن برنگشت.
-> audit مسیر داده نشان داد `auto_route` فعال و `auto_detect_interface` خاموش بود؛ در
-> نتیجه سوکت پراکسی به `VpnService.protect()` نمی‌رسید و می‌توانست دوباره داخل TUN
-> حلقه شود. آلفا ۷ این invariant را اصلاح و شکست شبکه/DNS/socket/TLS/HTTPS را جدا
-> گزارش می‌کند. تا تأیید مرور و DNS واقعی روی دستگاه production نیست.
+> وضعیت: **فاز ۴ آلفا ۱۰ تشخیصی؛ build و آزمون فیزیکی در انتظار**
+> آلفا ۹ در آزمون دستگاه شکست خورد: `Connected` کاذب بود و مرورگر، برنامه‌ها، دانلود و
+> آپلود اینترنت نداشتند. history ثابت کرد `route.auto_detect_interface` در آلفاهای ۷ تا ۹
+> برخلاف مستندات خاموش مانده بود و نام profile در home نیز از preference قدیمی می‌آمد.
+> آلفا ۱۰ route/protect را اصلاح می‌کند و Connected را به HTTPS واقعی داخل TUN به‌علاوهٔ
+> شواهد TUN، شبکهٔ فیزیکی، protected upstream و RX/TX بومی libbox مشروط می‌کند. این نسخه
+> تا عبور CI و آزمون واقعی browser/app/DNS/upload/download و چند failover، production نیست.
 
 FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات و telemetry است. رابط فارسی
 به‌صورت پیش‌فرض و RTL است و ترجمهٔ انگلیسی LTR نیز دارد. شناسهٔ موقت release
@@ -27,8 +28,9 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
 - Hysteria 1/2، TUIC v5 و anyTLS با TLS معتبر و UDP/QUIC در هسته
 - WireGuard استاندارد چندpeer با endpoint جدید sing-box 1.14، DNS/MTU/keepalive/reserved
 - TLS معتبر، Reality، uTLS fingerprint، ALPN و flow؛ بدون trust-all
-- نمایش `Connected` فقط بعد از start هسته، TUN و probe واقعی DNS+HTTPS
-- RX/TX واقعی سطح UID و IP/کشور خروجی best-effort
+- نمایش `Connected` فقط بعد از start هسته، TUN، probe واقعی DNS+TLS+HTTPS، مشاهدهٔ
+  protected upstream و RX/TX دوطرفه از traffic manager خود libbox
+- RX/TX و سرعت از Status API بومی libbox؛ `TrafficStats` سطح UID فقط fallback، و IP/کشور خروجی best-effort
 
 ### مدیریت و import فاز ۲
 
@@ -79,7 +81,7 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
 - شکست data path به physical interface، bootstrap DNS، socket routing، secure DNS، TLS، HTTPS و route تفکیک می‌شود؛ فقط counter/code امن و بدون مقصد ذخیره می‌شود
 - خطاهای permission، TUN، protect، config و هشت مرحلهٔ start بدون متن خام بومی به Failed و event code مجزا تبدیل می‌شوند
 - نگهداری رمز‌شدهٔ حداکثر ۳۲ candidate با selected profile در اولویت
-- watchdog با strict-HTTPS probe واقعی، دو شکست متوالی و بودجهٔ بدترین‌حالت شش‌ثانیه‌ای پیش از زمان reconnect
+- watchdog با strict-HTTPS واقعی و بودجهٔ بدترین‌حالت ۹ ثانیه پس از تأیید شکست همهٔ providerها، پیش از زمان reconnect
 - انتخاب fallback بر اساس تازه‌ترین latency تأییدشدهٔ تونل و سپس ping دسترسی endpoint، با cooldown قابل تنظیم ۳۰/۶۰/۱۲۰ ثانیه
 - metric پینگ TCP endpoint از latency HTTPS عبوری از تونل جداست و هیچ‌کدام به‌جای دیگری نمایش داده نمی‌شود
 - افت پایدار با چهار نمونه، EWMA، حداقل ۳۰ ثانیه اتصال، بهبود معنادار ۲۵۰ ms/۳۵٪ و cooldown سه‌دقیقه‌ای سوییچ می‌شود؛ آستانهٔ ضعیف پیش‌فرض ۱۵۰۰ ms و قابل تنظیم است
@@ -138,13 +140,14 @@ export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.0.13004108"
    اعلان/فرایند نباید خودکار دوباره Connecting شود مگر خودتان اتصال را بزنید.
 6. VLESS/VMess/Trojan، Shadowsocks، Hysteria 1/2، TUIC، anyTLS، WireGuard، HTTP
    و SOCKS5 را با سرورهای واقعی جداگانه آزمایش کنید.
-7. فقط پس از عبور strict-TLS از حداقل یک probe مستقل باید وضعیت سبز «متصل» دیده شود.
-8. یک backup رمز‌شده بسازید، کانفیگ‌ها را تغییر دهید و با عبارت عبور صحیح restore
-   کنید؛ عبارت اشتباه یا فایل دست‌کاری‌شده نباید vault فعلی را تغییر دهد.
-9. با حداقل دو profile واقعی، خرابی سرور فعال، انتقال زیر ۱۰ ثانیه، cooldown،
-   حالت Switching و عدم نشت در فاصلهٔ تعویض را اندازه‌گیری کنید.
-10. refresh خودکار subscription، process death، reboot، لغو مجوز، قطع شبکه،
-   تنظیمات، QS tile و ویرایش/حذف پروفایل انتخاب‌شده را تست کنید.
+7. روی همان دستگاه/شبکهٔ گزارش آلفا ۹، پس از Connected مرورگر و یک برنامهٔ دیگر،
+   DNS، دانلود و آپلود واقعی را بررسی کنید؛ RX/TX و IP خروجی نیز باید با واقعیت حرکت کنند.
+8. نام/protocol نشان‌داده‌شده در home را با candidate واقعاً در حال آزمون و سپس profile
+   تأییدشده تطبیق دهید؛ preference اولیه نباید بعد از failover باقی بماند.
+9. با حداقل دو profile واقعی چند بار خرابی اجباری بسازید و زمان failover، cooldown،
+   anti-flap، حالت Switching، تداوم حفاظت و نبود نشت در فاصلهٔ تعویض را اندازه‌گیری کنید.
+10. یک backup رمز‌شده بسازید و restore صحیح/عبارت اشتباه/فایل دست‌کاری‌شده را تست کنید؛
+   سپس refresh subscription، process death، reboot، لغو مجوز، قطع شبکه، Settings و QS tile را بیازمایید.
 
 ## به‌روزرسانی امن از GitHub
 
@@ -193,9 +196,9 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 
 ## محدودیت‌های فعلی
 
-- اتصال واقعی، DNS و عبور ترافیک آلفا ۷ روی دستگاه تأیید شده است؛ آلفا ۹ CI را پاس کرده و منتشر شده، اما failover/quality/process recovery آن باید روی همان دستگاه و در آزمون طولانی‌مدت تأیید شود.
-- آخرین APK تشخیصی ARM64: [آلفا ۹](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9)؛ [دانلود مستقیم](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.4.8-alpha9/FOXConnect-v14-debug-arm64-v8a.apk)، SHA-256: `5304c826c1554b74c355d9ac2c49eb8a0aeae2d634fd25994900b73e6b9ccdf2`.
-- APK فعلی debug-signed است، نه release-signed؛ مهاجرت یک‌باره به `com.foxconnect.app` با backup رمز‌شده، نصب جدا و restore لازم است.
+- آلفا ۹ روی دستگاه با Connected کاذب و نبود کامل ترافیک شکست خورد؛ آلفا ۱۰ هنوز تا CI و آزمون همان دستگاه تأیید نشده است.
+- [آلفا ۹](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9) فقط به‌عنوان سابقهٔ build شکست‌خورده باقی مانده و نباید برای اتصال استفاده شود. لینک آلفا ۱۰ پس از gateهای GitHub افزوده می‌شود.
+- build تشخیصی debug-signed است، نه release-signed؛ مهاجرت یک‌باره به `com.foxconnect.app` با backup رمز‌شده، نصب جدا و restore لازم است.
 - فرم ساختاریافتهٔ دستی فعلاً فقط برای VLESS است؛ بقیه از لینک یا فایل WireGuard import می‌شوند.
 - پذیرفته‌شدن JSON نمونه توسط CLI پین‌شده جای تست libbox بومی Android و سرور واقعی را نمی‌گیرد.
 - refresh زمان‌بندی‌شده و backup/restore روی JVM تست شده‌اند، اما اجرای واقعی
@@ -204,7 +207,7 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
   ۱۰ ثانیه و جلوگیری از نشت فقط پس از آزمون دستگاه قابل تأیید است.
 - محافظ داخلی جای lockdown سیستم را نمی‌گیرد؛ کاربر باید «Block connections without
   VPN» اندروید را برای حفاظت در برابر force-stop فعال کند.
-- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ آلفا ۹ تا تکمیل تست دستگاه diagnostic است.
+- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ آلفا ۱۰ تا تکمیل CI و تست دستگاه diagnostic است.
 
 ## License
 
@@ -215,33 +218,32 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 
 ## English
 
-FOXConnect is a no-root, ad-free and telemetry-free Android VPN client. Physical
-testing confirmed alpha 7 connectivity, DNS and protected traffic after repairing the
-`tun.auto_route` / `route.auto_detect_interface` invariant. Alpha 9 adds ranked,
-continuing recovery: fresh verified tunnel quality is preferred, endpoint TCP latency
-is retained as a separate reachability metric, and up to four candidates are tried per
-round. Sustained weak quality requires four consecutive samples, meaningful improvement
-and anti-flap cooldowns. Kill Switch blocks traffic during unavoidable Android TUN
-replacement, and `Connected` is published only after a new routed HTTPS verification.
+FOXConnect is a no-root, ad-free, telemetry-free Android VPN client. Alpha 9 failed its
+physical test: the app showed `Connected`, while browser/app traffic, download, and
+upload did not work. Endpoint TCP pings were successful, which confirms only endpoint
+reachability—not credentials, proxy handshake, routed DNS, TLS, or tunneled Internet.
+The profile shown on Home also remained stale after failover. Alpha 9 is not accepted.
 
-The isolated VPN is preserved across UI-process loss. A null sticky restart is accepted
-only for a previously verified authorized session with encrypted config and VPN consent,
-and is limited to three process recoveries per five minutes. Unknown actions, explicit
-disconnect, revoked consent and Android Force Stop remain fail-closed. Auto-connect
-defaults off and package replacement never connects.
+Alpha 10 repairs the routing invariant by emitting `tun.auto_route=true` together with
+`route.auto_detect_interface=true`; libbox can therefore call the typed Android platform
+control and `VpnService.protect(fd)` for upstream sockets. Ordinary health and identity
+probes remain unprotected and unbound, so they must traverse the VPN rather than bypass
+it. `Connected` now additionally requires observed TUN establishment, a physical uplink,
+a protected upstream socket, and bidirectional native libbox traffic after a real
+strict-TLS HTTPS response. Native libbox status is the primary RX/TX source.
 
-The supplied subscription path remains regression-tested: GZIP/Base64 decoding,
-17 VLESS imports, encrypted persistence and visible refresh are preserved without
-including any user endpoint or credential in source or diagnostics. Alpha 7 real
-connectivity was physically confirmed.
+Home uses the service's runtime profile/protocol during Connecting, Switching, and
+Connected. Healthy-state checks rotate providers to reduce overhead; a primary failure
+is confirmed by the other independent providers before recovery begins. Ranked
+continuous recovery, cooldowns, quality hysteresis, Kill Switch behavior, lifecycle
+recovery, and the token-free updater remain in place.
 
-Alpha 8 adds a token-free updater pinned to `hojjatrad/FOXConnect`: manual checks,
-opt-in 24-hour metadata-only checks, optional pre-releases, user-approved downloads,
-bounded strict-HTTPS transfers, companion SHA-256 verification, and APK package,
-newer-version, single-ABI and installed-certificate verification before Android's
-user-controlled installer opens. Alpha 9 code 14 passed GitHub Actions and is available
-as an [ARM64 diagnostic pre-release](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9).
-Production releases are built from GitHub Secrets and published only with the workflow's
-ephemeral `GITHUB_TOKEN`; no PAT is embedded. This remains a **debug-signed diagnostic
-device-test build, not a production release** until Release-key migration and long-running
-physical reliability tests are completed. See [HANDOFF.md](HANDOFF.md).
+CI now downloads the official sing-box 1.14.0 Linux checker with a pinned SHA-256 and
+revision, and the generated-config schema test fails instead of skipping when the exact
+checker is unavailable. Production release publishing still uses only GitHub Secrets and
+the workflow's ephemeral `GITHUB_TOKEN`; no PAT is embedded.
+
+Alpha 10 remains a **diagnostic candidate, not a production release**, until GitHub CI
+passes and the same device/network validates browser and app traffic, DNS, upload,
+download, displayed active profile, several forced failovers, no-leak behavior, and
+sustained operation. See [HANDOFF.md](HANDOFF.md).

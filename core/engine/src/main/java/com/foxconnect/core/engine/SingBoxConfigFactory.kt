@@ -301,7 +301,10 @@ object SingBoxConfigFactory {
                 })
                 put("final", "proxy")
                 put("default_domain_resolver", "bootstrap-dns")
-                put("auto_detect_interface", false)
+                // Required with Android VpnService auto-route. It activates the
+                // typed platform callback that protects each proxy/upstream
+                // socket from being captured by the same TUN again.
+                put("auto_detect_interface", true)
             })
         }
         return formatter.encodeToString(JsonObject.serializer(), root)

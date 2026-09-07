@@ -4,39 +4,41 @@
 
 ## وضعیت فعال
 
-نسخهٔ فعال: **`0.4.8-phase4-alpha9-reliability`**، `versionCode=14`.
-سورس در commit `69876c73017913618be02f30580931503f3f1f29` قرار دارد؛ GitHub Actions run
-`34091352252` موفق شد و pre-release تشخیصی آلفا ۹ منتشر و عمومی تأیید شد.
-آزمون فیزیکی طولانی‌مدت و سناریوهای degradation/process recovery هنوز انجام نشده‌اند.
+نسخهٔ در حال تعمیر: **`0.4.9-phase4-alpha10-data-path`**، `versionCode=15`.
+سورس عمومی `main` در شروع این تعمیر `aafb0037ff3e67f3e9cb17480f6a9c14e777bfa4`
+بود. تغییرهای آلفا ۱۰ روی branch محلی `repair/alpha10-data-path` commit شده‌اند، اما push
+به‌علت نبود credential مجاز GitHub انجام نشد. تا push، عبور CI و release نباید منتشرشده
+یا تأییدشده تلقی شوند.
 
-کاربر اتصال واقعی، DNS و عبور ترافیک آلفا ۷ را پس از اصلاح mismatch قطعی
-`auto_route=true` و `auto_detect_interface=false` تأیید کرد. آلفا ۸ engine را تغییر
-نداد و updater را افزود. آلفا ۹ برای گزارش قطع‌شدن اتصال در استفادهٔ طولانی، failover
-رتبه‌بندی‌شده و بازیابی lifecycle را تغییر می‌دهد؛ علت دقیق exit دستگاه بدون log هنوز قطعی نیست.
+Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI موفق بود، اما در
+آزمون فیزیکی همان دستگاه/شبکه شکست خورد: UI وضعیت `Connected` داشت، endpoint pingها
+موفق بودند، ولی مرورگر و برنامه‌ها، دانلود و آپلود اینترنت نداشتند. نام profile در home
+پس از failover قدیمی بود و کاربر Connection Event قابل‌مشاهده‌ای ندید. آلفا ۹ قابل قبول نیست.
 
-## یافته‌های قطعی
+بررسی history ثابت کرد ادعای قبلی مستندات دربارهٔ اصلاح route در آلفا ۷ نادرست بوده است:
+`route.auto_detect_interface=false` از commit اولیه تا APK آلفا ۹ باقی مانده بود. بنابراین
+گزارش قدیمی «تأیید ترافیک واقعی آلفا ۷» نباید مبنای پذیرش قرار گیرد.
 
-1. lifecycle قدیمی `START_STICKY` بود و null intent را connect می‌دانست؛ Android می‌توانست
-   پس از مرگ process دوباره سرویس را راه بیندازد.
-2. libbox و UI در یک process بودند؛ abort بومی UI را هم می‌بست.
-3. اتصال اولیه پس از failure بین همهٔ candidateهای subscription گردش می‌کرد و می‌توانست
-   مدت زیادی در پس‌زمینه Connecting/Switching بماند.
-4. auto-connect به‌صورت پیش‌فرض روشن و `MY_PACKAGE_REPLACED` نیز trigger اتصال بود؛ نصب
-   update می‌توانست بدون فرمان تازهٔ کاربر اتصال را آغاز کند.
-5. gate واقعی با باینری دقیق sing-box 1.14.0 نشان داد JSON قبلی به‌علت نبود
-   `route.default_domain_resolver` رد می‌شود. این یک علت قطعی برای برقرار نشدن اتصال است.
-6. DNS امن از مسیر proxy استفاده می‌کرد، در حالی که hostname خود proxy هنوز resolve نشده
-   بود؛ چرخهٔ bootstrap بالقوه وجود داشت.
-7. sing-box/libbox 1.14 از XHTTP و mKCP پشتیبانی نمی‌کند؛ تولید transport با typeهای
-   `xhttp`/`kcp` JSON نامعتبر می‌ساخت.
-8. state/event files بین UI و VPN قفل process-wide کامل نداشتند و race ممکن بود observer
-   یا diagnostic update را از بین ببرد.
-9. آلفا ۵ setup/version/config/network/command/service را در خطای کلی ادغام می‌کرد،
-   ترتیب command/network با SFA یکسان نبود، `needFindProcess` را رد می‌کرد و callback
-   شبکه تفاوت API/دیررسیدن LinkProperties را کامل پوشش نمی‌داد.
-10. آلفا ۶ TUN را با `auto_route=true` می‌ساخت، اما route-level
-    `auto_detect_interface=false` بود. بنابراین platform socket control فعال نمی‌شد و
-    سوکت پراکسی می‌توانست به‌جای شبکهٔ فیزیکی دوباره توسط همان TUN گرفته شود.
+## یافته‌های قطعی تعمیر آلفا ۱۰
+
+1. config معیوب `tun.auto_route=true`، `tun.strict_route=true` و `route.final=proxy` را
+   با `route.auto_detect_interface=false` ترکیب می‌کرد. در نتیجه callback پلتفرم برای
+   `VpnService.protect(fd)` فعال نمی‌شد و upstream می‌توانست دوباره داخل TUN حلقه شود.
+2. integration رسمی SagerNet نیز `usePlatformAutoDetectInterfaceControl()=true` دارد و
+   `autoDetectInterfaceControl(fd)` را به `protect(fd)` می‌فرستد؛ FOXConnect همان الگو را
+   دارد و باید route-level auto detection را فعال کند.
+3. `HomeScreen` همواره repository selection را نشان می‌داد، در حالی که service snapshot
+   از ابتدا identity واقعی candidate در Connecting/Switching/Connected را حمل می‌کرد.
+4. endpoint TCP ping فقط دسترسی host/port را ثابت می‌کند و هیچ مدرکی برای credential،
+   proxy handshake، DNS امن، TLS یا ترافیک داخل TUN نیست.
+5. health verifier آلفا ۹ فقط status code دقیق 200/204 را می‌پذیرفت و timeoutهای ۳/۱٫۵
+   ثانیه‌ای داشت؛ این رفتار روی شبکهٔ کند false negative می‌ساخت، نه اثبات کامل data path.
+6. آمار UI از `TrafficStats` سطح UID می‌آمد که برای byteهای forwardشدهٔ VPN روی همهٔ OEMها
+   کامل نیست. traffic manager و Status API خود libbox منبع بومی معتبرتر است.
+7. تست `SingBoxNativeSchemaTest` با نبود `SING_BOX_CHECK` skip می‌شد و workflow checker
+   نصب نمی‌کرد؛ بنابراین سبزی CI اعتبار JSON نزد هستهٔ دقیق 1.14 را ثابت نمی‌کرد.
+8. Connected باید fail-closed باشد: HTTPS unprotected داخل TUN به‌تنهایی با شواهد TUN،
+   شبکهٔ فیزیکی، protected upstream و RX/TX دوطرفهٔ native ترکیب می‌شود.
 
 ## اصلاح‌های آلفا ۵
 
@@ -80,7 +82,10 @@
   را لغو می‌کند؛ این تغییر زمان اعلام اتصال سالم را کم می‌کند و TLS را تضعیف نمی‌کند.
 - stage classifier و تمام transportهای قابل‌اجرا regression دارند.
 
-## اصلاح‌های آلفا ۷
+## ادعاهای مستندشده برای آلفا ۷ — ابطال‌شده توسط audit history
+
+> هشدار: موارد این بخش release-noteهای قدیمی‌اند و با source/tag واقعی آلفا ۷ تا ۹ منطبق
+> نیستند. اصلاح route/data-path واقعاً در آلفا ۱۰ وارد شد.
 
 - `route.auto_detect_interface=true` همراه `tun.auto_route=true` تولید می‌شود. این
   باعث فراخوانی `autoDetectInterfaceControl(fd)` و `VpnService.protect(fd)` برای سوکت
@@ -96,6 +101,32 @@
   به ۳ ثانیه رسیده است. نخستین موفقیت همچنان بلافاصله بازمی‌گردد و بودجهٔ watchdog
   با دو شکست روی ۹ ثانیه محدود است.
 - regression صریح مانع بازگشت ترکیب معیوب auto-route/auto-detect می‌شود.
+
+## تعمیرهای آلفا ۱۰ (در انتظار CI و دستگاه)
+
+- `SingBoxConfigFactory` اکنون `route.auto_detect_interface=true` تولید می‌کند و regression
+  مشترک `auto_route`/`strict_route`/`final=proxy`/auto-detect افزوده شده است.
+- `TypedLibboxCore` تعداد سوکت‌های protect‌شده، TUN، availability شبکه و bootstrap DNS
+  را فقط به‌صورت counter حافظه‌ای نگه می‌دارد؛ هیچ destination یا credential ثبت نمی‌شود.
+- پیش از Connected، service باید HTTPS strict-TLS واقعی را از TUN دریافت کند و سپس
+  TUN/physical/protect به‌علاوهٔ RX/TX دوطرفهٔ Status API خود libbox را مشاهده کند.
+- timeout اولیه/تعویض ۸/۶ ثانیه است. watchdog provider سالم را چرخشی می‌سنجد و failure
+  primary را با دو provider دیگر تأیید می‌کند؛ بودجهٔ تشخیص hard failure حداکثر ۹ ثانیه است.
+- native Status API منبع اصلی byte/speed است و UID `TrafficStats` فقط fallback مشخص است.
+- Android underlying network هنگام start و handover به‌روز می‌شود؛ applicationها bypass
+  نمی‌شوند و فقط سوکت‌های native محافظت‌شده به شبکهٔ فیزیکی می‌روند.
+- home برای stateهای فعال profile/protocol را از runtime snapshot می‌گیرد؛ repository فقط
+  در Disconnected/Failed منبع انتخاب است.
+- event codec، پاسخ HTTP معتبر، data-path evidence، route fallback، UI runtime identity،
+  classifier و failover budget تست قطعی دارند.
+- workflow checker رسمی sing-box 1.14.0 را با SHA-256
+  `2375de6999f4f56ab46b4fc5ddf26a6aba1d3e61a0f4e7ddec2f4690457d5f63` و revision
+  `0b8995879f29a9b98ee027bc17b75e101445b238` provision می‌کند؛ test دیگر skip نمی‌شود.
+- تلاش build محلی exact libbox روی sandbox 1.9 GiB RAM در مرحلهٔ `gobind` با signal killed
+  متوقف شد؛ این failure ناشی از کمبود حافظه است و نتیجهٔ compile/test کد آلفا ۱۰ نیست.
+- مرحلهٔ بعد: push branch با credential مجاز/تازه، PR CI، رفع هر compile/schema/lint failure،
+  merge به main، build GitHub، انتشار diagnostic alpha10 و سپس آزمون همان دستگاه/شبکه با browser/app،
+  DNS، upload/download، profile فعال، چند failover اجباری، no-leak و کارکرد پایدار.
 
 ## gate قطعی config/native
 
@@ -186,27 +217,27 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 - scan نهایی: بدون PAT/credential، endpoint fixture یا `OWNER/FOXConnect`
 - diff قطعی source در `core/engine/src` نسبت به آلفا ۷: صفر فایل
 
-## تست بعدی دستگاه پس از انتشار آلفا ۹
+## تست پذیرش دستگاه پس از انتشار آلفا ۱۰
 
-1. ابتدا CI، lint و هر دو split را سبز کنید؛ ARM64 cloud artifact را با همان certificate
-   آلفا ۷/۸ امضا و همهٔ package/version/ABI/signature/alignment/hash gateها را دوباره اجرا کنید.
-2. code 14 را روی آلفا ۸ نصب کنید و باقی‌ماندن vault/settings را تأیید کنید.
-3. اتصال، DNS، HTTPS، RX/TX و Disconnect عادی را regression کنید.
-4. active config را پس از Verified عمداً از دسترس خارج کنید؛ Kill Switch باید در فاصلهٔ
-   replacement ترافیک را ببندد و candidate سالم با کمترین metric تازه انتخاب شود.
-5. چهار candidate نخست را خراب کنید و سالمی را در دور بعد قرار دهید؛ recovery نباید پس
-   از یک fallback terminate شود و نباید Connected کاذب نشان دهد.
-6. latency تونل فعال را به‌طور پایدار بالای threshold ببرید؛ یک spike نباید switch کند،
-   اما چهار نمونهٔ متوالی با alternative معنادار باید switch کند. سپس cooldown سه‌دقیقه‌ای
-   باید از رفت‌وبرگشت سریع جلوگیری کند.
-7. UI را swipe-away و در صورت امکان process UI را جداگانه terminate کنید؛ VPN سالم باید
-   در process `:vpn` بماند. سپس process VPN را terminate کنید و recovery rate-limited را بسنجید.
-8. Android Force Stop باید همچنان session را متوقف کند. پوشش این حالت فقط با Always-on VPN
-   و «Block connections without VPN» سیستم است.
-9. updater آلفا ۸ باید pre-release code 14 را بدون token بیابد؛ دانلود و installer فقط پس
-   از تأیید صریح کاربر و verification کامل انجام شوند.
-10. آزمون طولانی‌مدت چندساعته اجرا و در صورت تکرار exit، زمان رویداد و logcat دسته‌بندی‌شده
-    جمع‌آوری شود؛ علت دقیق exit فعلی هنوز فقط با دستگاه قابل اثبات است.
+1. CI باید unit tests، checker بومی اجباری، lint و هر دو split را سبز کند؛ ARM64 cloud
+   artifact باید package/version/ABI/signature/alignment/hash gateها را پاس کند.
+2. code 15 را با همان debug certificate روی build قبلی نصب و باقی‌ماندن vault/settings را بررسی کنید.
+3. روی همان دستگاه/شبکهٔ شکست آلفا ۹، browser و یک app دیگر، DNS، HTTPS، دانلود و آپلود
+   واقعی را اجرا کنید. Connected بدون همهٔ اینها failure محسوب می‌شود.
+4. RX/TX و سرعت باید با ترافیک واقعی تغییر کنند و IP خروجی باید متعلق به تونل باشد؛ ping
+   endpoint به‌تنهایی هیچ معیار پذیرشی نیست.
+5. active profile را پس از Verified عمداً از دسترس خارج کنید؛ home باید فوراً candidate
+   Switching و سپس نام/protocol profile واقعاً Verified را پایدار نشان دهد.
+6. چند failover اجباری با profileهای سالم/خراب و ترتیب‌های متفاوت اجرا کنید؛ recovery دوری،
+   cooldown، anti-flap و انتخاب بهترین metric تازه را بررسی کنید.
+7. در تمام replacement/recovery با browser و DNS leak test مطمئن شوید Kill Switch مانع
+   ترافیک مستقیم است؛ برای Force Stop از Always-on + Block connections without VPN استفاده کنید.
+8. UI process و سپس VPN process را جداگانه terminate و recovery rate-limited را بررسی کنید؛
+   قطع صریح و لغو مجوز نباید خودکار دوباره وصل شوند.
+9. Connection Events باید connect/verified/switch/failure/kill-switch را بدون endpoint یا
+   credential نشان دهد. نبود رویداد باید همراه زمان و logcat دسته‌ای ثبت شود.
+10. آزمون چندساعتهٔ پایداری و updater pre-release code 15 را بدون token اجرا کنید؛ دانلود و
+    installer فقط پس از اقدام کاربر و verification کامل مجازند.
 
 ## build محلی کم‌حافظه
 

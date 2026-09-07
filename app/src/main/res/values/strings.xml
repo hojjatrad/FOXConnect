@@ -6,6 +6,7 @@
     <string name="status_failed">اتصال ناموفق</string>
     <string name="status_switching">در حال سوئیچ به کانفیگ بعدی…</string>
     <string name="selected_connection">اتصال انتخاب‌شده</string>
+    <string name="active_connection">کانکشن جاری تونل</string>
     <string name="no_config">کانفیگی انتخاب نشده است</string>
     <string name="choose_config_hint">لینک پروکسی یا فایل استاندارد WireGuard وارد کنید</string>
     <string name="exit_ip">IP خروجی</string>
@@ -146,7 +147,7 @@
     <string name="ping_all">پینگ همه</string>
     <string name="ping_running">در حال پینگ…</string>
     <string name="ping_all_finished">پینگ پایان یافت: %1$d پاسخ، %2$d ناموفق</string>
-    <string name="endpoint_ping_note">این عدد تأخیر واقعی اتصال TCP تا سرور است، نه تأیید رمز یا تونل. برای کانفیگ‌های فقط UDP/QUIC عدد ساختگی نشان داده نمی‌شود.</string>
+    <string name="endpoint_ping_note">این عدد فقط دسترسی TCP تا سرور را می‌سنجد؛ پینگ موفق، رمز، پراکسی، DNS، TLS یا اینترنت داخل تونل را تأیید نمی‌کند. برای اتصال‌های فقط UDP/QUIC عدد ساختگی نشان داده نمی‌شود.</string>
     <string name="endpoint_ping_failed">پینگ ناموفق</string>
     <string name="endpoint_ping_unsupported">پینگ TCP ندارد</string>
     <string name="disconnect_before_ping">برای پینگ همه ابتدا VPN را قطع کنید</string>

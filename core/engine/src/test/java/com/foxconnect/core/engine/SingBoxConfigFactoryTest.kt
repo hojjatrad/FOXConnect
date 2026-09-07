@@ -51,10 +51,13 @@ class SingBoxConfigFactoryTest {
         assertEquals("bootstrap-dns", outbound.getValue("domain_resolver").jsonPrimitive.content)
         assertEquals("ws", outbound.getValue("transport").jsonObject.getValue("type").jsonPrimitive.content)
         assertTrue(outbound.getValue("tls").jsonObject.getValue("reality").jsonObject.getValue("enabled").jsonPrimitive.content.toBoolean())
+        val route = root.getValue("route").jsonObject
         assertEquals(
             "bootstrap-dns",
-            root.getValue("route").jsonObject.getValue("default_domain_resolver").jsonPrimitive.content,
+            route.getValue("default_domain_resolver").jsonPrimitive.content,
         )
+        assertTrue(route.getValue("auto_detect_interface").jsonPrimitive.content.toBoolean())
+        assertEquals("proxy", route.getValue("final").jsonPrimitive.content)
     }
 
     @Test

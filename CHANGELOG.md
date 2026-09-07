@@ -1,5 +1,40 @@
 # تغییرات FOXConnect
 
+## 0.4.9-phase4-alpha10-data-path — 2026-09-07
+
+- ثبت شکست فیزیکی آلفا ۹: برنامه `Connected` نشان می‌داد اما مرورگر/برنامه‌ها، دانلود و
+  آپلود اینترنت نداشتند؛ ping endpointها موفق بود، نام پروفایل پس از failover قدیمی می‌ماند
+  و رویداد قابل‌مشاهده‌ای گزارش نشد. آلفا ۹ پذیرفته نیست.
+- اصلاح علت مستقیم حلقهٔ مسیر: `tun.auto_route=true` و `route.final=proxy` اکنون همیشه با
+  `route.auto_detect_interface=true` تولید می‌شوند تا libbox کنترل پلتفرم را فراخوانی و
+  هر سوکت upstream را با `VpnService.protect(fd)` به شبکهٔ فیزیکی هدایت کند.
+- ممنوع‌شدن قطعی false Connected: علاوه بر HTTPS واقعی از داخل TUN، پیش از انتشار وضعیت
+  Connected باید TUN، شبکهٔ فیزیکی، حداقل یک سوکت protect‌شده و RX/TX دوطرفهٔ گزارش‌شده
+  توسط traffic manager خود libbox مشاهده شود؛ نبود هر شاهد connection را رد می‌کند.
+- health probe بدون `protect`/network binding باقی ماند تا نتواند TUN را دور بزند؛ probe
+  strict-TLS هر status معتبر HTTP را می‌پذیرد، یک byte از body را در صورت وجود می‌خواند،
+  cache/connection reuse را می‌بندد و timeout اولیه/تعویض را به ۸/۶ ثانیه برمی‌گرداند.
+- watchdog سالم فقط یک provider چرخشی را می‌سنجد؛ شکست آن با دو provider مستقل دیگر
+  تأیید می‌شود و سپس در بودجهٔ حداکثر ۹ ثانیه failover آغاز می‌شود. این کار سربار سه
+  TLS هم‌زمان دائمی را حذف می‌کند، بدون پذیرش شکست تک-endpoint.
+- جایگزینی آمار ناقص UID با Status API خود libbox به‌عنوان منبع اصلی RX/TX و سرعت؛
+  `TrafficStats` فقط fallback صریح است. probe هویت خروجی همچنان unprotected و داخل TUN است.
+- home هنگام Connecting، Switching و Connected نام و protocol را فقط از snapshot runtime
+  سرویس می‌گیرد؛ انتخاب قدیمی repository دیگر نمی‌تواند candidate فعال/تأییدشده را بپوشاند.
+- شبکهٔ فیزیکی به‌عنوان underlying network به Android اعلام و در handoverها به‌روز می‌شود؛
+  این اعلان application bypass ایجاد نمی‌کند و routeهای پیش‌فرض Android 8–12 نیز regression دارند.
+- متن ping endpoint صریحاً توضیح می‌دهد که موفقیت TCP هیچ مدرکی برای credential، handshake
+  پراکسی، DNS، TLS یا اینترنت داخل تونل نیست. codec گزارش رویداد نیز برای تمام codeها تست شد.
+- native schema test دیگر skip نمی‌شود: workflow باینری رسمی sing-box 1.14.0 با SHA-256
+  `2375de6999f4f56ab46b4fc5ddf26a6aba1d3e61a0f4e7ddec2f4690457d5f63` و revision
+  `0b8995879f29a9b98ee027bc17b75e101445b238` را نصب و نبود/mismatch آن را fail می‌کند.
+- regressionهای route/protect evidence، پاسخ HTTPS، candidate runtime، failover budget،
+  event persistence و native traffic افزوده و `versionCode` به 15 ارتقا یافت. انتشار و
+  پذیرش این نسخه تا CI و آزمون فیزیکی browser/app/DNS/upload/download/failover معلق است.
+- **تصحیح سابقه:** توضیحات آلفا ۷ در پایین این فایل ادعا کرده بود auto-detect و چند کنترل
+  data path اصلاح شده‌اند؛ history مخزن ثابت کرد آن ادعاها با سورس/باینری آلفا ۷ تا ۹
+  منطبق نبودند. این اصلاح‌ها برای نخستین بار در همین آلفا ۱۰ اعمال می‌شوند.
+
 ## 0.4.8-phase4-alpha9-reliability — 2026-09-07
 
 - جداسازی کامل latency دسترسی TCP endpoint از latency واقعی HTTPS تأییدشده درون تونل؛

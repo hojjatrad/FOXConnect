@@ -16,21 +16,29 @@ import android.os.ParcelFileDescriptor
 import android.system.OsConstants
 import io.nekohasekai.libbox.BridgeOptions
 import io.nekohasekai.libbox.BridgeSession
+import io.nekohasekai.libbox.CommandClient
+import io.nekohasekai.libbox.CommandClientHandler
+import io.nekohasekai.libbox.CommandClientOptions
 import io.nekohasekai.libbox.CommandServer
 import io.nekohasekai.libbox.CommandServerHandler
+import io.nekohasekai.libbox.ConnectionEvents
 import io.nekohasekai.libbox.ConnectionOwner
 import io.nekohasekai.libbox.ExchangeContext
 import io.nekohasekai.libbox.InterfaceUpdateListener
 import io.nekohasekai.libbox.Libbox
 import io.nekohasekai.libbox.LocalDNSTransport
+import io.nekohasekai.libbox.LogIterator
 import io.nekohasekai.libbox.NeighborUpdateListener
 import io.nekohasekai.libbox.NetworkInterfaceIterator
 import io.nekohasekai.libbox.Notification
+import io.nekohasekai.libbox.OutboundGroupIterator
+import io.nekohasekai.libbox.OutboundGroupItemIterator
 import io.nekohasekai.libbox.OverrideOptions
 import io.nekohasekai.libbox.PlatformInterface
 import io.nekohasekai.libbox.PlatformUser
 import io.nekohasekai.libbox.SetupOptions
 import io.nekohasekai.libbox.ShellSession
+import io.nekohasekai.libbox.StatusMessage
 import io.nekohasekai.libbox.StringIterator
 import io.nekohasekai.libbox.SystemProxyStatus
 import io.nekohasekai.libbox.TunOptions
@@ -40,6 +48,7 @@ import java.net.NetworkInterface
 import java.net.UnknownHostException
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import io.nekohasekai.libbox.NetworkInterface as BoxNetworkInterface
 
 /**
@@ -48,6 +57,20 @@ import io.nekohasekai.libbox.NetworkInterface as BoxNetworkInterface
  * the whole Android process. Keeping the native core in :vpn and using typed
  * callbacks prevents that class of process-ending failure.
  */
+internal data class NativeTrafficSnapshot(
+    val rxBytes: Long,
+    val txBytes: Long,
+    val rxBytesPerSecond: Long,
+    val txBytesPerSecond: Long,
+)
+
+internal object TunRoutePolicy {
+    fun requiresDefaultRoute(explicitRouteCount: Int, hasAddressFamily: Boolean): Boolean {
+        require(explicitRouteCount >= 0)
+        return explicitRouteCount == 0 && hasAddressFamily
+    }
+}
+
 internal enum class CoreStartStage(val code: String) {
     SETUP("core_setup_failed"),
     VERSION("core_version_failed"),
@@ -79,13 +102,22 @@ internal class TypedLibboxCore(
 ) : AutoCloseable, CommandServerHandler, PlatformInterface {
     private val closing = AtomicBoolean(false)
     private val stopReported = AtomicBoolean(false)
-    private val networkMonitor = PhysicalNetworkMonitor(service)
-    private val localResolver = AndroidLocalResolver(networkMonitor)
+    private val dataPathDiagnostics = DataPathDiagnostics()
+    private val networkMonitor = PhysicalNetworkMonitor(service) { available ->
+        dataPathDiagnostics.recordPhysicalNetwork(available)
+    }
+    private val localResolver = AndroidLocalResolver(networkMonitor, dataPathDiagnostics)
+    private val traffic = AtomicReference<NativeTrafficSnapshot?>(null)
     private var commandServer: CommandServer? = null
+    private var statusClient: CommandClient? = null
     private var tunDescriptor: ParcelFileDescriptor? = null
 
     val available: Boolean
         get() = true
+
+    fun dataPathSnapshot(): DataPathSnapshot = dataPathDiagnostics.snapshot()
+
+    fun trafficSnapshot(): NativeTrafficSnapshot? = traffic.get()
 
     fun start(configJson: String) {
         check(!closing.get()) { "libbox_core_closed" }
@@ -113,6 +145,9 @@ internal class TypedLibboxCore(
                 // Process lookup is implemented by findConnectionOwner on API
                 // 29+, and by libbox procfs lookup on older Android versions.
                 if (server.needWIFIState()) server.updateWIFIState()
+                // Status accounting is observational; a vendor-specific command
+                // client failure must not tear down an otherwise verified VPN.
+                runCatching { startStatusClient() }
             }
         } catch (error: Throwable) {
             close()
@@ -122,6 +157,10 @@ internal class TypedLibboxCore(
 
     override fun close() {
         if (!closing.compareAndSet(false, true)) return
+        val client = statusClient
+        statusClient = null
+        runCatching { client?.disconnect() }
+        traffic.set(null)
         val server = commandServer
         commandServer = null
         runCatching { server?.closeService() }
@@ -129,6 +168,40 @@ internal class TypedLibboxCore(
         runCatching { tunDescriptor?.close() }
         tunDescriptor = null
         networkMonitor.close()
+    }
+
+    private fun startStatusClient() {
+        val options = CommandClientOptions().apply {
+            addCommand(Libbox.CommandStatus)
+            statusInterval = STATUS_INTERVAL_NS
+        }
+        val client = CommandClient(object : CommandClientHandler {
+            override fun connected() = Unit
+            override fun disconnected(message: String?) {
+                traffic.set(null)
+            }
+            override fun writeStatus(message: StatusMessage) {
+                if (closing.get() || !message.trafficAvailable) return
+                traffic.set(
+                    NativeTrafficSnapshot(
+                        rxBytes = message.downlinkTotal.coerceAtLeast(0),
+                        txBytes = message.uplinkTotal.coerceAtLeast(0),
+                        rxBytesPerSecond = message.downlink.coerceAtLeast(0),
+                        txBytesPerSecond = message.uplink.coerceAtLeast(0),
+                    ),
+                )
+            }
+            override fun setDefaultLogLevel(level: Int) = Unit
+            override fun clearLogs() = Unit
+            override fun writeLogs(messageList: LogIterator?) = Unit
+            override fun writeGroups(message: OutboundGroupIterator?) = Unit
+            override fun writeOutbounds(message: OutboundGroupItemIterator?) = Unit
+            override fun initializeClashMode(modeList: StringIterator, currentMode: String) = Unit
+            override fun updateClashMode(newMode: String) = Unit
+            override fun writeConnectionEvents(events: ConnectionEvents?) = Unit
+        }, options)
+        statusClient = client
+        client.connect()
     }
 
     // CommandServerHandler -------------------------------------------------
@@ -163,6 +236,7 @@ internal class TypedLibboxCore(
 
     override fun autoDetectInterfaceControl(fd: Int) {
         check(fd >= 0 && service.protect(fd)) { "protect_outbound_socket_failed" }
+        dataPathDiagnostics.recordProtectedSocket()
     }
 
     override fun openTun(options: TunOptions): Int {
@@ -175,6 +249,10 @@ internal class TypedLibboxCore(
             .setSession("FOXConnect")
             .setMtu(options.mtu.coerceIn(MIN_MTU, MAX_MTU))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) builder.setMetered(false)
+        networkMonitor.current()?.let { physical ->
+            // Declare the actual uplink to Android without allowing application bypass.
+            builder.setUnderlyingNetworks(arrayOf(physical))
+        }
 
         var hasInet4 = false
         val inet4 = options.inet4Address
@@ -210,6 +288,7 @@ internal class TypedLibboxCore(
 
         val descriptor = builder.establish() ?: error("tun_establish_failed")
         tunDescriptor = descriptor
+        dataPathDiagnostics.recordTunEstablished()
         return descriptor.fd
     }
 
@@ -256,7 +335,9 @@ internal class TypedLibboxCore(
                 builder.addRoute(prefix.address(), prefix.prefix())
                 inet4Routes++
             }
-            if (inet4Routes == 0 && hasInet4) builder.addRoute("0.0.0.0", 0)
+            if (TunRoutePolicy.requiresDefaultRoute(inet4Routes, hasInet4)) {
+                builder.addRoute("0.0.0.0", 0)
+            }
 
             var inet6Routes = 0
             val route6 = options.inet6RouteRange
@@ -265,7 +346,9 @@ internal class TypedLibboxCore(
                 builder.addRoute(prefix.address(), prefix.prefix())
                 inet6Routes++
             }
-            if (inet6Routes == 0 && hasInet6) builder.addRoute("::", 0)
+            if (TunRoutePolicy.requiresDefaultRoute(inet6Routes, hasInet6)) {
+                builder.addRoute("::", 0)
+            }
         }
     }
 
@@ -447,13 +530,17 @@ internal class TypedLibboxCore(
 
     private companion object {
         const val EXPECTED_CORE_VERSION = "1.14.0"
+        const val STATUS_INTERVAL_NS = 1_000_000_000L
         const val MIN_MTU = 1_280
         const val MAX_MTU = 9_000
         val isSetup = AtomicBoolean(false)
     }
 }
 
-private class PhysicalNetworkMonitor(service: VpnService) : AutoCloseable {
+private class PhysicalNetworkMonitor(
+    private val service: VpnService,
+    private val onAvailabilityChanged: (Boolean) -> Unit,
+) : AutoCloseable {
     private val connectivity = service.getSystemService(ConnectivityManager::class.java)
     private val handler = Handler(Looper.getMainLooper())
     private val started = AtomicBoolean(false)
@@ -481,7 +568,7 @@ private class PhysicalNetworkMonitor(service: VpnService) : AutoCloseable {
 
     fun start() {
         if (!started.compareAndSet(false, true)) return
-        currentNetwork = findPhysicalNetwork()
+        update(findPhysicalNetwork())
         val request = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
@@ -533,6 +620,11 @@ private class PhysicalNetworkMonitor(service: VpnService) : AutoCloseable {
 
     private fun update(network: Network?) {
         currentNetwork = network
+        onAvailabilityChanged(network != null)
+        // Keep Android's VPN metadata aligned with Wi-Fi/mobile handovers.
+        // This does not exempt applications from the VPN; only protected native
+        // upstream sockets can use the declared physical network.
+        runCatching { service.setUnderlyingNetworks(network?.let { arrayOf(it) }) }
         notifyListener(network)
     }
 
@@ -569,6 +661,7 @@ private class PhysicalNetworkMonitor(service: VpnService) : AutoCloseable {
             runCatching { connectivity.unregisterNetworkCallback(callback) }
         }
         currentNetwork = null
+        onAvailabilityChanged(false)
     }
 
     private companion object {
@@ -579,6 +672,7 @@ private class PhysicalNetworkMonitor(service: VpnService) : AutoCloseable {
 
 private class AndroidLocalResolver(
     private val networkMonitor: PhysicalNetworkMonitor,
+    private val diagnostics: DataPathDiagnostics,
 ) : LocalDNSTransport {
     override fun raw(): Boolean = false
 
@@ -587,6 +681,7 @@ private class AndroidLocalResolver(
     }
 
     override fun lookup(ctx: ExchangeContext, network: String?, domain: String?) {
+        diagnostics.recordBootstrapDnsRequest()
         val target = networkMonitor.current()
         if (target == null || domain.isNullOrBlank()) {
             ctx.errorCode(SERVFAIL)
@@ -605,7 +700,12 @@ private class AndroidLocalResolver(
                 .mapNotNull { it.hostAddress?.substringBefore('%') }
                 .distinct()
                 .joinToString("\n")
-            if (addresses.isBlank()) ctx.errorCode(NXDOMAIN) else ctx.success(addresses)
+            if (addresses.isBlank()) {
+                ctx.errorCode(NXDOMAIN)
+            } else {
+                diagnostics.recordBootstrapDnsSuccess()
+                ctx.success(addresses)
+            }
         } catch (_: UnknownHostException) {
             ctx.errorCode(NXDOMAIN)
         } catch (_: Throwable) {
