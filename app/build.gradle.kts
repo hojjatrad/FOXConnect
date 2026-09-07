@@ -94,6 +94,9 @@ dependencies {
     implementation(project(":core:parser"))
     implementation(project(":core:engine"))
     implementation(project(":core:storage"))
+    // Package the exact AAR that :core:engine compiles against; applications may
+    // consume local AARs directly, while Android library modules may not nest them.
+    implementation(files(project(":core:engine").file("libs/libbox.aar")))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

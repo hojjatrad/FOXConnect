@@ -29,5 +29,7 @@ dependencies {
     // CI restores the official GPL-3.0 AAR and verifies libs/libbox.aar.sha256.
     val libbox = file("libs/libbox.aar")
     require(libbox.isFile) { "Restore the pinned libbox AAR before building" }
-    implementation(files(libbox))
+    // The library compiles against libbox, while the final application packages it.
+    // This avoids nesting a local AAR inside another AAR, which AGP rejects.
+    compileOnly(files(libbox))
 }

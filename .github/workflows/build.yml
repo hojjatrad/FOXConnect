@@ -37,7 +37,8 @@ jobs:
       - name: Install pinned Android toolchain
         run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
       - name: Restore exact libbox cache
-        uses: actions/cache@v4
+        id: libbox-cache
+        uses: actions/cache/restore@v4
         with:
           path: core/engine/libs/libbox.aar
           key: libbox-${{ runner.os }}-v1.14.0-0b8995879f29a9b98ee027bc17b75e101445b238-go${{ env.GO_VERSION }}-ndk${{ env.NDK_VERSION }}
@@ -49,6 +50,12 @@ jobs:
             ./scripts/build-libbox.sh
           fi
           ./scripts/verify-libbox.sh
+      - name: Save verified libbox cache
+        if: ${{ steps.libbox-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: core/engine/libs/libbox.aar
+          key: ${{ steps.libbox-cache.outputs.cache-primary-key }}
       - name: Unit tests and application lint
         run: ./gradlew --no-daemon --max-workers=1 testDebugUnitTest :app:lintDebug --stacktrace
       - name: Build diagnostic split APKs
