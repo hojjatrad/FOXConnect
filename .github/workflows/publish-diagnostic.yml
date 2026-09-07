@@ -49,11 +49,19 @@ jobs:
           git fetch origin main --no-tags
           git merge-base --is-ancestor "$tag_target" origin/main
 
+          releases_json="$RUNNER_TEMP/releases.json"
+          matching_json="$RUNNER_TEMP/matching.json"
           release_json="$RUNNER_TEMP/release.json"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$release_json"
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > "$releases_json"
+          jq --arg tag "$TAG" '[.[] | select(.tag_name == $tag)]' "$releases_json" > "$matching_json"
+          test "$(jq length "$matching_json")" = 1
+          jq '.[0]' "$matching_json" > "$release_json"
           test "$(jq -r .draft "$release_json")" = true
           test "$(jq -r .prerelease "$release_json")" = true
           test "$(jq -r .tag_name "$release_json")" = "$TAG"
+          release_id="$(jq -r .id "$release_json")"
+          [[ "$release_id" =~ ^[1-9][0-9]*$ ]]
+          printf 'RELEASE_ID=%s\n' "$release_id" >> "$GITHUB_ENV"
 
           apk="FOXConnect-v${VERSION_CODE}-debug-arm64-v8a.apk"
           expected_assets="$(printf '%s\n' "$apk" "$apk.sha256" SHA256SUMS VERIFICATION.txt | sort)"
@@ -61,7 +69,12 @@ jobs:
           test "$actual_assets" = "$expected_assets"
 
           mkdir release-assets
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir release-assets
+          while IFS= read -r asset_name; do
+            asset_id="$(jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .id' "$release_json")"
+            [[ "$asset_id" =~ ^[1-9][0-9]*$ ]]
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" > "release-assets/$asset_name"
+          done <<< "$expected_assets"
           cd release-assets
 
           actual_hash="$(sha256sum "$apk" | cut -d' ' -f1)"
@@ -102,7 +115,12 @@ jobs:
             exit 1
           fi
       - name: Publish with the ephemeral GitHub Actions token
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+        run: |
+          set -euo pipefail
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -F draft=false -F prerelease=true > "$RUNNER_TEMP/published.json"
+          test "$(jq -r .draft "$RUNNER_TEMP/published.json")" = false
+          test "$(jq -r .prerelease "$RUNNER_TEMP/published.json")" = true
       - name: Verify published state
         run: |
           set -euo pipefail
