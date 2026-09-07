@@ -103,6 +103,7 @@
     <string name="log_connecting">Tunnel startup began</string>
     <string name="log_verified">A real probe verified the connection</string>
     <string name="log_health_failed">The watchdog confirmed a connection failure</string>
+    <string name="log_quality_degraded">Sustained weak tunnel quality triggered a healthier-candidate search</string>
     <string name="log_tunnel_verification_failed">Protected traffic verification failed</string>
     <string name="log_core_setup_failed">Native core setup failed</string>
     <string name="log_core_version_failed">Native core version check failed</string>
@@ -121,7 +122,7 @@
     <string name="log_disconnected">Tunnel closed</string>
     <string name="log_permission_revoked">VPN permission revoked</string>
     <string name="log_core_process_stopped">Core process stopped; automatic retry blocked</string>
-    <string name="log_ui_process_crashed">UI process stopped; emergency disconnect requested</string>
+    <string name="log_ui_process_crashed">UI process stopped; the isolated verified VPN was preserved</string>
     <string name="sort_by_latency">Sort by measured latency</string>
     <string name="profile_latency">%1$d ms</string>
     <string name="profile_cooldown">Cooldown: %1$d sec</string>
@@ -131,7 +132,10 @@
     <string name="settings_title">Connection settings</string>
     <string name="setting_auto_connect">Connect automatically after startup</string>
     <string name="setting_failover">Automatically switch after a failure</string>
-    <string name="setting_return_preferred">Periodically return to the preferred profile</string>
+    <string name="setting_quality_switch">Switch after sustained weak quality to the healthiest measured profile</string>
+    <string name="setting_weak_latency">Weak tunnel latency threshold</string>
+    <string name="milliseconds_short">%1$d ms</string>
+    <string name="setting_return_preferred">Periodically return to the preferred profile (quality switching off)</string>
     <string name="setting_kill_switch">In-app Kill Switch (enabled by default)</string>
     <string name="setting_cooldown">Failed-profile cooldown</string>
     <string name="seconds_short">%1$d sec</string>

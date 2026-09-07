@@ -14,7 +14,9 @@
     <string name="vpn_permission_missing">VPN permission has not been granted</string>
     <string name="vpn_start_failed">The VPN service could not start; check connection events</string>
     <string name="vpn_all_profiles_failed">No healthy profile is available to keep the connection</string>
-    <string name="vpn_process_stopped">The VPN core stopped unexpectedly. Automatic retry was blocked; tap Connect to try again.</string>
+    <string name="vpn_recovery_waiting">Protected recovery continues while Kill Switch blocks traffic</string>
+    <string name="vpn_process_recovering">The VPN process stopped unexpectedly; protected recovery is pending</string>
+    <string name="vpn_process_stopped">The VPN core stopped unexpectedly</string>
     <string name="vpn_tunnel_verification_failed">The tunnel started, but protected internet traffic could not be verified. Check the network or profile and try again.</string>
     <string name="vpn_tun_establish_failed">Android could not create the VPN tunnel. Confirm VPN permission and remove any conflicting VPN.</string>
     <string name="vpn_socket_protection_failed">The VPN could not bind outbound traffic to the physical network. Change networks and try again.</string>

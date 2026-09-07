@@ -29,6 +29,8 @@ import com.foxconnect.app.update.UpdateUiState
 internal data class ProductSettings(
     val autoConnect: Boolean = false,
     val failoverEnabled: Boolean = true,
+    val qualitySwitchEnabled: Boolean = true,
+    val weakLatencyThresholdMs: Int = 1_500,
     val returnToPreferred: Boolean = false,
     val killSwitchEnabled: Boolean = true,
     val cooldownSeconds: Int = 60,
@@ -68,9 +70,31 @@ internal fun SettingsDialog(
                     onCheckedChange = { value = value.copy(failoverEnabled = it) },
                 )
                 SettingSwitch(
+                    title = stringResource(R.string.setting_quality_switch),
+                    checked = value.qualitySwitchEnabled,
+                    enabled = value.failoverEnabled,
+                    onCheckedChange = {
+                        value = value.copy(
+                            qualitySwitchEnabled = it,
+                            returnToPreferred = if (it) false else value.returnToPreferred,
+                        )
+                    },
+                )
+                Text(stringResource(R.string.setting_weak_latency))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(800, 1_500, 2_500).forEach { latencyMs ->
+                        FilterChip(
+                            selected = value.weakLatencyThresholdMs == latencyMs,
+                            enabled = value.failoverEnabled && value.qualitySwitchEnabled,
+                            onClick = { value = value.copy(weakLatencyThresholdMs = latencyMs) },
+                            label = { Text(stringResource(R.string.milliseconds_short, latencyMs)) },
+                        )
+                    }
+                }
+                SettingSwitch(
                     title = stringResource(R.string.setting_return_preferred),
                     checked = value.returnToPreferred,
-                    enabled = value.failoverEnabled,
+                    enabled = value.failoverEnabled && !value.qualitySwitchEnabled,
                     onCheckedChange = { value = value.copy(returnToPreferred = it) },
                 )
                 SettingSwitch(

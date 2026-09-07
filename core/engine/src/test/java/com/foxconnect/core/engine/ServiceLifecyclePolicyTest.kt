@@ -8,21 +8,36 @@ import org.junit.Test
 
 class ServiceLifecyclePolicyTest {
     @Test
-    fun `null restart intent is ignored rather than converted to connect`() {
+    fun `unauthorized null restart intent remains ignored`() {
         assertEquals(ServiceStartRequest.IGNORE, classifyServiceStart(null))
     }
 
     @Test
-    fun `only explicit product actions can change tunnel state`() {
-        assertEquals(ServiceStartRequest.CONNECT, classifyServiceStart(FoxVpnService.ACTION_CONNECT))
-        assertEquals(ServiceStartRequest.DISCONNECT, classifyServiceStart(FoxVpnService.ACTION_DISCONNECT))
-        assertEquals(ServiceStartRequest.IGNORE, classifyServiceStart("android.intent.action.MAIN"))
-        assertEquals(ServiceStartRequest.IGNORE, classifyServiceStart("com.example.UNKNOWN"))
+    fun `persistently authorized null restart becomes bounded recovery`() {
+        assertEquals(
+            ServiceStartRequest.RECOVER,
+            classifyServiceStart(action = null, authorizedSystemRecovery = true),
+        )
     }
 
     @Test
-    fun `an established tunnel gets at most one automatic fallback per event`() {
-        assertEquals(1, MAX_FAILOVER_ATTEMPTS_PER_EVENT)
+    fun `only product actions or authorized recovery can change tunnel state`() {
+        assertEquals(ServiceStartRequest.CONNECT, classifyServiceStart(FoxVpnService.ACTION_CONNECT))
+        assertEquals(ServiceStartRequest.DISCONNECT, classifyServiceStart(FoxVpnService.ACTION_DISCONNECT))
+        assertEquals(ServiceStartRequest.IGNORE, classifyServiceStart("android.intent.action.MAIN", true))
+        assertEquals(ServiceStartRequest.IGNORE, classifyServiceStart("com.example.UNKNOWN", true))
+    }
+
+    @Test
+    fun `each recovery round is bounded but can inspect several ranked candidates`() {
+        assertEquals(4, MAX_FAILOVER_ATTEMPTS_PER_ROUND)
+        assertTrue(MAX_FAILOVER_ATTEMPTS_PER_ROUND > 1)
+    }
+
+    @Test
+    fun `sticky process recovery has a small persistent crash loop budget`() {
+        assertEquals(3, ServiceRecoveryRateLimiter.MAX_RECOVERIES_PER_WINDOW)
+        assertEquals(5 * 60_000L, ServiceRecoveryRateLimiter.WINDOW_MS)
     }
 
     @Test

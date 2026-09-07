@@ -246,13 +246,14 @@ class TunnelRuntimeObserver(
                     if (stale) {
                         val failed = stored.snapshot.copy(
                             state = ConnectionState.Failed(
-                                appContext.getString(R.string.vpn_process_stopped),
-                                "vpn_process_stopped",
+                                appContext.getString(R.string.vpn_process_recovering),
+                                "vpn_process_recovery_pending",
                             ),
                             stats = TunnelStats.Empty,
                         )
                         TunnelRuntime.replace(failed)
-                        runCatching { TunnelRunAuthorization(appContext).revoke() }
+                        // Preserve explicit user authorization: the sticky VPN service may be
+                        // restarting under its persisted, rate-limited recovery budget.
                         runCatching { TunnelEventLog(appContext).append(TunnelEventCode.CORE_PROCESS_STOPPED) }
                         runCatching { store.write(failed) }
                         lastAppliedUpdate = System.currentTimeMillis()

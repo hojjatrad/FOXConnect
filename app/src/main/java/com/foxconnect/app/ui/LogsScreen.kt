@@ -113,6 +113,7 @@ private fun eventText(code: TunnelEventCode): String = stringResource(
         TunnelEventCode.CONNECTING -> R.string.log_connecting
         TunnelEventCode.VERIFIED -> R.string.log_verified
         TunnelEventCode.HEALTH_FAILED -> R.string.log_health_failed
+        TunnelEventCode.QUALITY_DEGRADED -> R.string.log_quality_degraded
         TunnelEventCode.TUNNEL_VERIFICATION_FAILED -> R.string.log_tunnel_verification_failed
         TunnelEventCode.CORE_SETUP_FAILED -> R.string.log_core_setup_failed
         TunnelEventCode.CORE_VERSION_FAILED -> R.string.log_core_version_failed

@@ -14,7 +14,9 @@
     <string name="vpn_permission_missing">مجوز VPN داده نشده است</string>
     <string name="vpn_start_failed">شروع سرویس VPN انجام نشد؛ گزارش رویدادها را بررسی کنید</string>
     <string name="vpn_all_profiles_failed">هیچ پروفایل سالمی برای ادامهٔ اتصال پیدا نشد</string>
-    <string name="vpn_process_stopped">هستهٔ VPN به‌طور غیرمنتظره متوقف شد. تلاش خودکار متوقف شده است؛ برای تلاش دوباره روی اتصال بزنید.</string>
+    <string name="vpn_recovery_waiting">بازیابی محافظت‌شده ادامه دارد و Kill Switch ترافیک را می‌بندد</string>
+    <string name="vpn_process_recovering">فرایند VPN ناگهانی متوقف شد؛ بازیابی محافظت‌شده در انتظار است</string>
+    <string name="vpn_process_stopped">هستهٔ VPN به‌طور غیرمنتظره متوقف شد</string>
     <string name="vpn_tunnel_verification_failed">تونل شروع شد، اما عبور امن ترافیک اینترنت تأیید نشد. شبکه یا پروفایل را بررسی و دوباره تلاش کنید.</string>
     <string name="vpn_tun_establish_failed">اندروید نتوانست تونل VPN را ایجاد کند. مجوز VPN و نبود VPN هم‌زمان دیگر را بررسی کنید.</string>
     <string name="vpn_socket_protection_failed">VPN نتوانست ترافیک خروجی را به شبکهٔ فیزیکی متصل کند. شبکه را تغییر دهید و دوباره تلاش کنید.</string>

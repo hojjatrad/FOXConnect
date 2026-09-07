@@ -103,6 +103,7 @@
     <string name="log_connecting">شروع برقراری تونل</string>
     <string name="log_verified">اتصال با probe واقعی تأیید شد</string>
     <string name="log_health_failed">watchdog خرابی اتصال را تأیید کرد</string>
+    <string name="log_quality_degraded">افت پایدار کیفیت تونل، جست‌وجوی کانفیگ سالم‌تر را فعال کرد</string>
     <string name="log_tunnel_verification_failed">تأیید عبور ترافیک محافظت‌شده ناموفق بود</string>
     <string name="log_core_setup_failed">راه‌اندازی اولیهٔ هستهٔ بومی ناموفق بود</string>
     <string name="log_core_version_failed">بررسی نسخهٔ هستهٔ بومی ناموفق بود</string>
@@ -121,7 +122,7 @@
     <string name="log_disconnected">تونل بسته شد</string>
     <string name="log_permission_revoked">مجوز VPN لغو شد</string>
     <string name="log_core_process_stopped">فرایند هسته متوقف شد؛ تلاش خودکار مسدود شد</string>
-    <string name="log_ui_process_crashed">فرایند رابط متوقف شد؛ فرمان قطع اضطراری ارسال شد</string>
+    <string name="log_ui_process_crashed">فرایند رابط متوقف شد؛ VPN تأییدشدهٔ ایزوله حفظ شد</string>
     <string name="sort_by_latency">مرتب‌سازی با تأخیر واقعی</string>
     <string name="profile_latency">%1$d ms</string>
     <string name="profile_cooldown">انتظار: %1$d ثانیه</string>
@@ -131,7 +132,10 @@
     <string name="settings_title">تنظیمات اتصال</string>
     <string name="setting_auto_connect">اتصال خودکار پس از راه‌اندازی</string>
     <string name="setting_failover">جابه‌جایی خودکار هنگام خرابی</string>
-    <string name="setting_return_preferred">بازگشت دوره‌ای به پروفایل ترجیحی</string>
+    <string name="setting_quality_switch">انتقال پس از افت پایدار کیفیت به سالم‌ترین پروفایل اندازه‌گیری‌شده</string>
+    <string name="setting_weak_latency">آستانهٔ تأخیر ضعیف تونل</string>
+    <string name="milliseconds_short">%1$d میلی‌ثانیه</string>
+    <string name="setting_return_preferred">بازگشت دوره‌ای به پروفایل ترجیحی (با خاموش‌بودن انتقال کیفیت)</string>
     <string name="setting_kill_switch">Kill Switch داخلی (پیش‌فرض فعال)</string>
     <string name="setting_cooldown">زمان انتظار پروفایل خراب</string>
     <string name="seconds_short">%1$d ثانیه</string>

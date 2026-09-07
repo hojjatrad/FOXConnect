@@ -263,7 +263,11 @@ class MainActivity : AppCompatActivity() {
                                     outcomes.forEach { (id, outcome) ->
                                         when (outcome) {
                                             is ProfileLatencyTester.Outcome.Reachable ->
-                                                profileHealthStore.recordSuccess(id, outcome.latencyMs)
+                                                profileHealthStore.recordEndpointSuccess(
+                                                    id,
+                                                    outcome.latencyMs,
+                                                    System.currentTimeMillis(),
+                                                )
                                             ProfileLatencyTester.Outcome.Unreachable ->
                                                 profileHealthStore.recordEndpointProbeFailure(id)
                                             ProfileLatencyTester.Outcome.Unsupported -> Unit
@@ -780,6 +784,9 @@ class MainActivity : AppCompatActivity() {
         return ProductSettings(
             autoConnect = preferences.getBoolean(AUTO_CONNECT_KEY, false),
             failoverEnabled = preferences.getBoolean(FoxVpnService.KEY_FAILOVER_ENABLED, true),
+            qualitySwitchEnabled = preferences.getBoolean(FoxVpnService.KEY_QUALITY_SWITCH_ENABLED, true),
+            weakLatencyThresholdMs = preferences.getLong(FoxVpnService.KEY_WEAK_LATENCY_THRESHOLD_MS, 1_500)
+                .toInt().coerceIn(300, 10_000),
             returnToPreferred = preferences.getBoolean(FoxVpnService.KEY_RETURN_TO_PREFERRED, false),
             killSwitchEnabled = preferences.getBoolean(FoxVpnService.KEY_KILL_SWITCH_ENABLED, true),
             cooldownSeconds = (preferences.getLong(FoxVpnService.KEY_FAILOVER_COOLDOWN_MS, 60_000) / 1_000)
@@ -793,6 +800,8 @@ class MainActivity : AppCompatActivity() {
         getSharedPreferences(FoxVpnService.PRODUCT_PREFERENCES, MODE_PRIVATE).edit()
             .putBoolean(AUTO_CONNECT_KEY, value.autoConnect)
             .putBoolean(FoxVpnService.KEY_FAILOVER_ENABLED, value.failoverEnabled)
+            .putBoolean(FoxVpnService.KEY_QUALITY_SWITCH_ENABLED, value.qualitySwitchEnabled)
+            .putLong(FoxVpnService.KEY_WEAK_LATENCY_THRESHOLD_MS, value.weakLatencyThresholdMs.toLong())
             .putBoolean(FoxVpnService.KEY_RETURN_TO_PREFERRED, value.returnToPreferred)
             .putBoolean(FoxVpnService.KEY_KILL_SWITCH_ENABLED, value.killSwitchEnabled)
             .putLong(FoxVpnService.KEY_FAILOVER_COOLDOWN_MS, value.cooldownSeconds * 1_000L)

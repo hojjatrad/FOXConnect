@@ -1,7 +1,6 @@
 package com.foxconnect.core.engine
 
 import android.content.Context
-import android.content.Intent
 import android.util.AtomicFile
 
 /**
@@ -17,9 +16,29 @@ internal class TunnelRunAuthorization(context: Context) {
 
     @Synchronized
     fun authorize() {
+        writeState(STATE_REQUESTED)
+    }
+
+    @Synchronized
+    fun markVerified() {
+        if (readState() != null) writeState(STATE_VERIFIED)
+    }
+
+    @Synchronized
+    fun revoke() {
+        file.delete()
+    }
+
+    @Synchronized
+    fun isAuthorized(): Boolean = readState() != null
+
+    @Synchronized
+    fun isVerified(): Boolean = readState() == STATE_VERIFIED
+
+    private fun writeState(state: Int) {
         val output = file.startWrite()
         try {
-            output.write(1)
+            output.write(state)
             output.fd.sync()
             file.finishWrite(output)
         } catch (error: Throwable) {
@@ -28,25 +47,27 @@ internal class TunnelRunAuthorization(context: Context) {
         }
     }
 
-    @Synchronized
-    fun revoke() {
-        file.delete()
+    private fun readState(): Int? {
+        if (!file.baseFile.isFile || file.baseFile.length() != 1L) return null
+        return runCatching { file.readFully().single().toInt() and 0xff }
+            .getOrNull()
+            ?.takeIf { it == STATE_REQUESTED || it == STATE_VERIFIED }
     }
 
-    fun isAuthorized(): Boolean = file.baseFile.isFile && file.baseFile.length() == 1L
+    private companion object {
+        const val STATE_REQUESTED = 1
+        const val STATE_VERIFIED = 2
+    }
 }
 
-/** Best-effort fail-closed handling if the UI process itself has an uncaught crash. */
+/**
+ * The VPN runs in its own process, so a UI-process crash must not tear down an
+ * already verified tunnel. Record only a credential-free event. Explicit user
+ * disconnect, VPN permission revocation, and Android Force Stop still stop it.
+ */
 object TunnelEmergencyStop {
     fun request(context: Context) {
         val appContext = context.applicationContext
-        runCatching { TunnelRunAuthorization(appContext).revoke() }
-        runCatching { EngineConfigStore(appContext).clear() }
         runCatching { TunnelEventLog(appContext).append(TunnelEventCode.UI_PROCESS_CRASHED) }
-        runCatching {
-            appContext.startService(
-                Intent(appContext, FoxVpnService::class.java).setAction(FoxVpnService.ACTION_DISCONNECT),
-            )
-        }
     }
 }

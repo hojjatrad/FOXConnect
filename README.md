@@ -53,7 +53,7 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
   مبهم/ناشناخته در parserهای جدید و هرگونه TLS bypass رد می‌شوند
 - ورودی‌های مخرب/بزرگ fail-closed هستند و raw config در log یا notification نوشته نمی‌شود
 
-### سلامت، Subscription و Failover فاز ۴ آلفا ۷ تشخیصی
+### سلامت، Subscription و Failover فاز ۴ آلفا ۹ تشخیصی
 
 - نمونهٔ واقعی کاربر در 2026-09-06 با کلاینت تولیدی بررسی شد: HTTP 200، Base64
   معتبر، ۱۷ لینک VLESS، import کامل ۱۷/۱۷ و sync معتبر ۱۷ پروفایل
@@ -66,9 +66,10 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
   صریحاً بدون مقدار می‌مانند و این پینگ به‌عنوان تأیید credential یا تونل معرفی نمی‌شود
 - مرز JNI بازتابی حذف شده و تمام ۲۷ callback پلتفرم و ۷ callback سرور فرمان با API دقیق AAR پیاده شده‌اند
 - هستهٔ libbox در فرایند `:vpn` است؛ heartbeat خصوصی وضعیت را به UI می‌رساند و مرگ فرایند را بدون ادعای اتصال تشخیص می‌دهد
-- `START_NOT_STICKY`، authorization marker و رد intent تهی/ناشناخته مانع reconnect پس از crash، stop و تلاش ناموفق می‌شوند
+- session تأییدشده با authorization marker از بسته‌شدن UI مستقل است؛ `START_STICKY` فقط برای intent تهیِ مجاز، config موجود و مجوز معتبر VPN فعال می‌شود و سقف سه restart در پنج دقیقه مانع crash loop است
+- intent ناشناخته/بدون authorization همچنان fail-closed است؛ disconnect صریح، لغو مجوز VPN و Android Force Stop بازیابی نمی‌شوند
 - gate واقعی CLI پین‌شده همهٔ JSONها را بررسی می‌کند؛ `default_domain_resolver` و DNS bootstrap فیزیکی چرخهٔ اتصال اولیه را شکسته‌اند
-- اتصال اولیه فقط پروفایل انتخاب‌شده را یک بار امتحان می‌کند؛ failover فقط پس از اتصال تأییدشده و حداکثر یک fallback در هر رخداد است
+- پس از شکست اتصال انتخاب‌شده حداکثر چهار candidate رتبه‌بندی‌شده در هر دور آزموده می‌شود؛ برای session قبلاً تأییدشده، دورهای بازیابی با تأخیر محدود تا اتصال یا قطع صریح ادامه دارند
 - setup، نسخه، checkConfig، ساخت/start سرور فرمان، پایش شبکه، start سرویس و post-start مرز تشخیصی مستقل دارند
 - ترتیب start با SFA هم‌راستا است: OOM draft و command server پیش از monitor/service؛ lookup مالک اتصال API 29+ نیز پیاده شده است
 - مالکیت command server پیش از start ثبت می‌شود و TUN، route/exclude، DNS، package rule و descriptorها چرخهٔ عمر مشخص دارند
@@ -78,11 +79,13 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
 - شکست data path به physical interface، bootstrap DNS، socket routing، secure DNS، TLS، HTTPS و route تفکیک می‌شود؛ فقط counter/code امن و بدون مقصد ذخیره می‌شود
 - خطاهای permission، TUN، protect، config و هشت مرحلهٔ start بدون متن خام بومی به Failed و event code مجزا تبدیل می‌شوند
 - نگهداری رمز‌شدهٔ حداکثر ۳۲ candidate با selected profile در اولویت
-- watchdog با strict-HTTPS probe واقعی، دو شکست متوالی و بودجهٔ تشخیص محدود ۹ ثانیه
-- یک fallback محدود پس از خرابی تونل تأییدشده، cooldown قابل تنظیم ۳۰/۶۰/۱۲۰ ثانیه و جلوگیری از حلقهٔ retry
-- بازگشت دوره‌ای به پروفایل ترجیحی فقط با انتخاب کاربر و به‌صورت پیش‌فرض خاموش
-- Kill Switch داخلی پیش‌فرض فعال با TUN مسدودکننده هنگام تعویض یا شکست همهٔ profileها
-- ثبت latency واقعی probe و مرتب‌سازی فقط اندازه‌گیری‌های موجود؛ مقدار ناشناخته ساخته نمی‌شود
+- watchdog با strict-HTTPS probe واقعی، دو شکست متوالی و بودجهٔ بدترین‌حالت شش‌ثانیه‌ای پیش از زمان reconnect
+- انتخاب fallback بر اساس تازه‌ترین latency تأییدشدهٔ تونل و سپس ping دسترسی endpoint، با cooldown قابل تنظیم ۳۰/۶۰/۱۲۰ ثانیه
+- metric پینگ TCP endpoint از latency HTTPS عبوری از تونل جداست و هیچ‌کدام به‌جای دیگری نمایش داده نمی‌شود
+- افت پایدار با چهار نمونه، EWMA، حداقل ۳۰ ثانیه اتصال، بهبود معنادار ۲۵۰ ms/۳۵٪ و cooldown سه‌دقیقه‌ای سوییچ می‌شود؛ آستانهٔ ضعیف پیش‌فرض ۱۵۰۰ ms و قابل تنظیم است
+- بازگشت دوره‌ای به پروفایل ترجیحی فقط با خاموش‌کردن سوییچ کیفیت و انتخاب کاربر فعال است
+- Kill Switch داخلی پیش‌فرض فعال با TUN مسدودکننده هنگام تعویض و فاصلهٔ بازیابی؛ فقط پس از probe واقعی وضعیت Connected منتشر می‌شود
+- مقدار latency ناشناخته ساخته نمی‌شود؛ سوییچ بدون فاصلهٔ مطلق تضمین نمی‌شود
 - صفحهٔ تنظیمات، گزارش رویداد کد-محور بدون endpoint/credential، اعلان live و QS tile
 
 ## Build

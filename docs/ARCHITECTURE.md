@@ -103,19 +103,23 @@ System cloud backup and device-transfer backup are disabled for all app data.
 ## Native process and lifecycle boundary
 
 `FoxVpnService` runs in the dedicated `:vpn` process. The UI never loads libbox, so
-a Go/JNI abort can terminate only the VPN process, not the activity process. The
-service returns `START_NOT_STICKY` for every request and accepts only explicit
-connect/disconnect actions carrying an app-private authorization marker. A null
-restart intent or unknown/unauthorized action is stopped and can never be interpreted
-as connect. Auto-connect defaults off; package replacement never connects. Boot
-connection remains a separate policy that takes effect only after user enablement.
+a Go/JNI abort can terminate only the VPN process, not the activity process. Explicit
+connect/disconnect actions still require an app-private authorization marker. A null
+restart intent becomes recovery only when authorization, encrypted active config and
+Android VPN consent all remain valid. That authorized path returns `START_STICKY` and
+has a persistent limit of three process recoveries per five minutes; exceeding the
+budget revokes authorization rather than forming a crash loop. Unknown or unauthorized
+actions remain fail-closed. Auto-connect defaults off, and package replacement never
+connects. Boot connection is a separate opt-in policy.
 
 A bounded private `AtomicFile` bridge with an inter-process file lock carries only
 sanitized runtime state and a monotonic heartbeat. The UI polls it and converts a
-missing heartbeat into a stable `vpn_process_stopped` failure after seven seconds;
-it never fabricates `Connected`. Automatic failover is bounded inside one live
-service attempt. Once candidates are exhausted or the native process dies, a new
-attempt requires the user or explicit boot policy.
+missing heartbeat into a truthful recovery-pending failure after seven seconds, but
+does not revoke a verified session's authorization. An uncaught UI-process failure
+records only a categorical event and does not disconnect the isolated VPN. Explicit
+disconnect, VPN permission revocation and Android Force Stop still terminate recovery.
+`Connected` is never reconstructed from stale state; every restored native tunnel must
+pass a new routed HTTPS verification.
 
 The JNI boundary implements the exact pinned gomobile `PlatformInterface` and
 `CommandServerHandler` types; dynamic proxies and nullable/default callback guesses
@@ -193,21 +197,26 @@ destinations and stack traces are never persisted or shown.
 ## Watchdog, failover and leak guard
 
 A versioned encrypted engine payload contains the selected profile followed by up
-to 31 bounded fallback configs for later recovery. Initial connect attempts only the
-selected profile once. Fallback is eligible only after a tunnel was actually verified
-and is limited to one alternate candidate per health/core-stop event. `FailoverPolicy`
-skips cooling candidates and returns to candidate zero only when the user explicitly
-enables that option.
+to 31 bounded fallback configs for later recovery. An explicit initial request starts
+with the selected profile and can then inspect up to four ranked alternatives in a
+bounded round. A previously verified session continues ranked rounds with a 5–60 second
+delay after currently eligible candidates fail. Explicit disconnect or lost VPN consent
+ends recovery. `FailoverPolicy` skips persisted cooldowns and chooses the lowest fresh
+verified tunnel latency first, then the lowest fresh TCP endpoint latency, then a stable
+unknown-order fallback. Endpoint reachability is never numerically substituted for
+verified tunneled quality.
 
-After verification, a 1.5-second watchdog interval runs independent strict-TLS
-routed HTTPS probes concurrently with a 3-second timeout. Any syntactically valid
-HTTP response after authenticated TLS proves the path; it need not be a region-
-dependent 200/204. The first successful probe completes the round and cancels the
-others, so a blocked provider cannot delay or reject a working tunnel. Two consecutive
-rounds create a bounded nine-second worst-case detection budget before native reconnect
-work. Every candidate must pass
-a new real probe before `Connected` is published. Device timing below ten seconds is
-a release gate, not inferred from the host test.
+After verification, a 1.5-second watchdog interval runs concurrent strict-TLS routed
+HTTPS probes with a 1.5-second per-probe timeout. Any syntactically valid HTTP response
+after authenticated TLS proves the path; it need not be a region-dependent 200/204.
+The first successful probe completes the round and cancels the others. Two consecutive
+failed rounds create a six-second worst-case detection budget before native reconnect
+work. Successful samples feed a bounded EWMA. Quality switching requires the same
+better candidate for four consecutive samples, at least 30 seconds on the active tunnel,
+at least 250 ms and 35 percent improvement (or a reachable trial when the active tunnel
+exceeds the configurable weak threshold), and a three-minute post-switch cooldown.
+Every candidate must pass a new real probe before `Connected` is published. Physical
+device timing remains a release gate and a zero-gap TUN handoff is not claimed.
 
 Before closing a failed core, the service establishes a full-route sink TUN when the
 default-enabled in-service Kill Switch is on. The sink remains after terminal
@@ -222,10 +231,12 @@ sends an explicit disconnect, waits up to three seconds for `Disconnected`, and 
 then opens a physical-network socket. Refreshing the active subscription similarly
 disconnects first; periodic background refresh does not interrupt a healthy tunnel.
 
-Health metadata contains random profile ID, probe latency, timestamp, endpoint-probe
-failure bit and cooldown only; credentials/endpoints remain in the encrypted vault.
-The manual “ping all” operation performs up to eight real, three-second-bounded TCP
-handshakes in parallel. It is labelled endpoint latency rather than tunnel validation;
+Health metadata contains random profile ID, separately keyed endpoint latency/timestamp,
+verified tunnel latency/timestamp, endpoint-probe failure bit and cooldown only;
+credentials/endpoints remain in the encrypted vault. Legacy alpha8 latency keys migrate
+in place as endpoint measurements and are never relabelled as tunnel quality. The manual
+“ping all” operation performs up to eight real, three-second-bounded TCP handshakes in
+parallel. It is labelled endpoint latency rather than tunnel validation;
 UDP/QUIC-only configurations remain unavailable instead of receiving inferred values.
 The event log stores only bounded timestamps and enum codes. It cannot contain profile names, URLs, endpoints,
 raw config or exception messages.
