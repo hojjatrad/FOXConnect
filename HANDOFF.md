@@ -4,10 +4,10 @@
 
 ## وضعیت فعال
 
-نسخهٔ در حال توسعه: **`0.4.8-phase4-alpha9-reliability`**، `versionCode=14`.
-تغییرهای سورس و تست‌های آلفا ۹ آمادهٔ مرور محلی هستند، اما هنوز commit/push نشده‌اند،
-GitHub Actions اجرا نشده، APK ساخته/امضا/منتشر نشده و آزمون دستگاه انجام نشده است.
-آخرین release عمومی و قابل نصب همچنان آلفا ۸ code 13 است.
+نسخهٔ فعال: **`0.4.8-phase4-alpha9-reliability`**، `versionCode=14`.
+سورس در commit `69876c73017913618be02f30580931503f3f1f29` قرار دارد؛ GitHub Actions run
+`34091352252` موفق شد و pre-release تشخیصی آلفا ۹ منتشر و عمومی تأیید شد.
+آزمون فیزیکی طولانی‌مدت و سناریوهای degradation/process recovery هنوز انجام نشده‌اند.
 
 کاربر اتصال واقعی، DNS و عبور ترافیک آلفا ۷ را پس از اصلاح mismatch قطعی
 `auto_route=true` و `auto_detect_interface=false` تأیید کرد. آلفا ۸ engine را تغییر
@@ -114,7 +114,7 @@ missing default domain resolver شکست می‌خورد.
 import می‌شود و هر ۱۷ profile در repository باقی می‌مانند. هیچ دادهٔ واقعی subscription
 در source/test/log/doc وجود ندارد.
 
-## اصلاح‌های آلفا ۹ (در انتظار CI و دستگاه)
+## اصلاح‌های آلفا ۹ (CI سبز؛ در انتظار دستگاه)
 
 - `ProfileHealthStore` کلیدهای endpoint TCP آلفا ۸ را بدون relabel حفظ و metricهای جدید
   latency/timestamp تونل تأییدشده را جدا ذخیره می‌کند.
@@ -133,7 +133,26 @@ import می‌شود و هر ۱۷ profile در repository باقی می‌مان
 - تنظیمات جدید کیفیت/آستانهٔ ۸۰۰، ۱۵۰۰ یا ۲۵۰۰ ms فارسی/انگلیسی هستند؛ پیش‌فرض کیفیت
   روشن و ۱۵۰۰ ms است. return-to-preferred فقط با خاموش‌کردن quality switch قابل انتخاب است.
 - تست‌های policy/lifecycle برای ranking، freshness، جداسازی metric، hysteresis، cooldown،
-  چهار تلاش و recovery مجاز اضافه شده‌اند؛ نتیجهٔ واقعی آن‌ها تا CI نامعلوم است.
+  چهار تلاش و recovery مجاز اضافه شده‌اند و همراه کل suite و lint در CI پاس شدند.
+
+## APK آلفا ۹
+
+- انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9`
+- دانلود مستقیم: `https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.4.8-alpha9/FOXConnect-v14-debug-arm64-v8a.apk`
+- نسخه: `0.4.8-phase4-alpha9-reliability (14)`
+- package: `com.foxconnect.app.debug`
+- ABI: فقط `arm64-v8a`
+- اندازه: `46,759,511` bytes
+- SHA-256: `5304c826c1554b74c355d9ac2c49eb8a0aeae2d634fd25994900b73e6b9ccdf2`
+- certificate SHA-256: `ffee4a25472705834a1fdb680fbae4ffce31e02d472fa7897765b767c307b709`
+- امضا: همان certificate آلفا ۷/۸، فقط APK Signature Scheme v2
+- ZIP/native alignment: 16 KiB؛ libbox LOAD alignment: `0x4000`
+- source commit: `69876c73017913618be02f30580931503f3f1f29`
+- CI: `https://github.com/hojjatrad/FOXConnect/actions/runs/34091352252`
+- artifact رسمی: `10007017089`؛ ARM64 artifact ابری با کلید persistent diagnostic دوباره امضا شد
+
+API عمومی GitHub، digest، اندازه و retrieval بدون token برای APK/checksum تأیید شدند.
+metadata همراه: companion checksum، `SHA256SUMS` و `VERIFICATION.txt`.
 
 ## APK آلفا ۸
 
@@ -152,7 +171,12 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 
 ## اعتبارسنجی سبز
 
-- GitHub Actions run `34086712348` روی commit `5db147ef9ddf973db3e4dae2160fb655a7afb8be` موفق
+- GitHub Actions run `34091352252` روی commit `69876c73017913618be02f30580931503f3f1f29` موفق
+- ۸۳ test case موجود parser/storage/engine/updater، application lint و split assembly موفق
+- final ARM64: package/version/ABI، گواهی دقیق آلفا ۸، v2، zipalign 16 KiB، LOAD align
+  `0x4000`، manifest و scan credential همگی دوباره تأیید شدند
+- انتشار عمومی آلفا ۹: digest GitHub و companion checksum دقیقاً با hash نهایی برابرند
+- run تاریخی آلفا ۸ `34086712348` روی commit `5db147ef9ddf973db3e4dae2160fb655a7afb8be` موفق
 - ۷۴ تست parser/storage/engine/updater بدون failure یا skip (۶۹ قبلی + ۵ updater)
 - parser/storage regressions GZIP/Base64/17 VLESS و lifecycle/routing قبلی محفوظ
 - updater tests: repository pin، stable/pre-release، downgrade/equal، channel و URL hostile
@@ -221,6 +245,9 @@ export SING_BOX_CHECK=/home/user/.cache/sing-box-1.14.0/sing-box
   با digest دقیق `c5d45705025120533d2c955698e7c0f0c52f9f983d0fbc01bdbc42f2a3b40a34` تأیید شد.
 - آلفا ۸ با versionCode 13 updater بدون token، manual + periodic opt-in، stable/pre-release،
   notification، download دستی و verification کامل قبل از Android installer را اضافه می‌کند.
+- Pre-release عمومی آلفا ۹ در `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9`
+  با hash دقیق `5304c826c1554b74c355d9ac2c49eb8a0aeae2d634fd25994900b73e6b9ccdf2` منتشر و
+  از API عمومی/checksum بدون token تأیید شد.
 - workflow با OAuth scope صحیح push شد و run نهایی سبز است؛ buildهای عادی read-only هستند
   و job انتشار tag به `contents: write` محدود می‌شود و فقط `GITHUB_TOKEN` موقت می‌گیرد.
 - libbox رسمی دقیق پس از build و verify در GitHub Actions cache شد؛ buildهای بعدی checksum
@@ -240,4 +267,4 @@ export SING_BOX_CHECK=/home/user/.cache/sing-box-1.14.0/sing-box
 - هیچ token، UUID، host، Reality key، URI، raw payload یا credential واقعی در
   source، fixture، log، docs، notification یا پاسخ وارد نشود.
 - هیچ updater نباید repository، certificate، package، ABI، version یا hash gate را قابل‌دورزدن کند.
-- آلفا ۷ از نظر اتصال/DNS/traffic روی دستگاه تأیید شد؛ آلفا ۸ updater منتشرشده و diagnostic است؛ آلفا ۹ هنوز ساخته/منتشر نشده و همهٔ تغییرهای reliability آن نیازمند CI و آزمون دستگاه‌اند.
+- آلفا ۷ از نظر اتصال/DNS/traffic روی دستگاه تأیید شد؛ آلفا ۸ updater و آلفا ۹ reliability منتشر شده‌اند؛ قابلیت‌های آلفا ۹ هنوز diagnostic و نیازمند آزمون فیزیکی طولانی‌مدت‌اند.

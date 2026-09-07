@@ -18,8 +18,9 @@
   بازیابی فرایند در پنج دقیقه برای جلوگیری از crash loop؛ intent ناشناخته همچنان fail-closed است
 - افزودن تست‌های قطعی برای رتبه‌بندی latency، تفکیک endpoint/tunnel، freshness، hysteresis،
   cooldown، دور چهارتایی و recovery مجاز؛ ارتقای `versionCode` به 14
-- این نسخه تا عبور GitHub Actions و سپس آزمون فیزیکی طولانی‌مدت، diagnostic و تأییدنشده است؛
-  Android Force Stop قابل دورزدن نیست و handoff بدون فاصلهٔ مطلق تضمین نمی‌شود
+- GitHub Actions run `34091352252` با ۸۳ test case، lint و split assembly پاس شد و
+  pre-release تشخیصی منتشر شد؛ آزمون فیزیکی طولانی‌مدت هنوز لازم است، Android Force Stop
+  قابل دورزدن نیست و handoff بدون فاصلهٔ مطلق تضمین نمی‌شود
 
 ## 0.4.7-phase4-alpha8-updater — 2026-09-07
 

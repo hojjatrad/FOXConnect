@@ -193,7 +193,8 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 
 ## محدودیت‌های فعلی
 
-- اتصال واقعی، DNS و عبور ترافیک آلفا ۷ روی دستگاه تأیید شده است؛ آلفا ۸ باید جداگانه روی همان دستگاه regression شود.
+- اتصال واقعی، DNS و عبور ترافیک آلفا ۷ روی دستگاه تأیید شده است؛ آلفا ۹ CI را پاس کرده و منتشر شده، اما failover/quality/process recovery آن باید روی همان دستگاه و در آزمون طولانی‌مدت تأیید شود.
+- آخرین APK تشخیصی ARM64: [آلفا ۹](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9)؛ [دانلود مستقیم](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.4.8-alpha9/FOXConnect-v14-debug-arm64-v8a.apk)، SHA-256: `5304c826c1554b74c355d9ac2c49eb8a0aeae2d634fd25994900b73e6b9ccdf2`.
 - APK فعلی debug-signed است، نه release-signed؛ مهاجرت یک‌باره به `com.foxconnect.app` با backup رمز‌شده، نصب جدا و restore لازم است.
 - فرم ساختاریافتهٔ دستی فعلاً فقط برای VLESS است؛ بقیه از لینک یا فایل WireGuard import می‌شوند.
 - پذیرفته‌شدن JSON نمونه توسط CLI پین‌شده جای تست libbox بومی Android و سرور واقعی را نمی‌گیرد.
@@ -203,7 +204,7 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
   ۱۰ ثانیه و جلوگیری از نشت فقط پس از آزمون دستگاه قابل تأیید است.
 - محافظ داخلی جای lockdown سیستم را نمی‌گیرد؛ کاربر باید «Block connections without
   VPN» اندروید را برای حفاظت در برابر force-stop فعال کند.
-- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ updater آلفا ۸ CI را پاس کرده ولی تا تست دستگاه diagnostic است.
+- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ آلفا ۹ تا تکمیل تست دستگاه diagnostic است.
 
 ## License
 
@@ -215,15 +216,19 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 ## English
 
 FOXConnect is a no-root, ad-free and telemetry-free Android VPN client. Physical
-testing of alpha 6 proved that libbox and Android TUN start, but protected traffic did
-not return. The data-path audit found `tun.auto_route` enabled while
-`route.auto_detect_interface` was disabled, preventing libbox from consistently
-passing proxy sockets to `VpnService.protect()` and allowing a routing loop back into
-the TUN. Diagnostic alpha 7 repairs that invariant and separately classifies physical
-interface, bootstrap DNS, socket routing, secure DNS, strict TLS and HTTPS failures.
-Initial connect remains exactly one selected-profile attempt; only a previously
-verified tunnel may try one fallback. Auto-connect defaults off, package replacement
-never connects, and every service start requires fresh user/explicit-boot authorization.
+testing confirmed alpha 7 connectivity, DNS and protected traffic after repairing the
+`tun.auto_route` / `route.auto_detect_interface` invariant. Alpha 9 adds ranked,
+continuing recovery: fresh verified tunnel quality is preferred, endpoint TCP latency
+is retained as a separate reachability metric, and up to four candidates are tried per
+round. Sustained weak quality requires four consecutive samples, meaningful improvement
+and anti-flap cooldowns. Kill Switch blocks traffic during unavoidable Android TUN
+replacement, and `Connected` is published only after a new routed HTTPS verification.
+
+The isolated VPN is preserved across UI-process loss. A null sticky restart is accepted
+only for a previously verified authorized session with encrypted config and VPN consent,
+and is limited to three process recoveries per five minutes. Unknown actions, explicit
+disconnect, revoked consent and Android Force Stop remain fail-closed. Auto-connect
+defaults off and package replacement never connects.
 
 The supplied subscription path remains regression-tested: GZIP/Base64 decoding,
 17 VLESS imports, encrypted persistence and visible refresh are preserved without
@@ -234,8 +239,9 @@ Alpha 8 adds a token-free updater pinned to `hojjatrad/FOXConnect`: manual check
 opt-in 24-hour metadata-only checks, optional pre-releases, user-approved downloads,
 bounded strict-HTTPS transfers, companion SHA-256 verification, and APK package,
 newer-version, single-ABI and installed-certificate verification before Android's
-user-controlled installer opens. Production releases are built from GitHub Secrets
-and published only with the workflow's ephemeral `GITHUB_TOKEN`; no PAT is embedded.
-This remains a **debug-signed diagnostic device-test build, not a production release**
-until the new Release-key migration and physical regression are completed. See
-[HANDOFF.md](HANDOFF.md).
+user-controlled installer opens. Alpha 9 code 14 passed GitHub Actions and is available
+as an [ARM64 diagnostic pre-release](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.8-alpha9).
+Production releases are built from GitHub Secrets and published only with the workflow's
+ephemeral `GITHUB_TOKEN`; no PAT is embedded. This remains a **debug-signed diagnostic
+device-test build, not a production release** until Release-key migration and long-running
+physical reliability tests are completed. See [HANDOFF.md](HANDOFF.md).
