@@ -1,0 +1,32 @@
+<resources>
+    <string name="vpn_channel_name">تونل FOXConnect</string>
+    <string name="vpn_tile_label">FOXConnect VPN</string>
+    <string name="vpn_notification_connecting">در حال برقراری تونل…</string>
+    <string name="vpn_notification_switching">در حال انتقال امن به پروفایل جایگزین…</string>
+    <string name="vpn_notification_connected">تونل تأیید و برقرار شد</string>
+    <string name="vpn_notification_live">↓ %1$s  ↑ %2$s  ·  %3$s</string>
+    <string name="vpn_notification_failed">برقراری تونل ناموفق بود</string>
+    <string name="vpn_notification_blocked">اتصال قطع است؛ Kill Switch ترافیک را مسدود کرده است</string>
+    <string name="vpn_kill_switch_session">محافظ قطع ارتباط FOXConnect</string>
+    <string name="vpn_notification_stop">قطع اتصال</string>
+    <string name="vpn_permission_revoked">مجوز VPN توسط سیستم لغو شد</string>
+    <string name="vpn_no_selected_config">کانفیگی برای اتصال انتخاب نشده است</string>
+    <string name="vpn_permission_missing">مجوز VPN داده نشده است</string>
+    <string name="vpn_start_failed">شروع سرویس VPN انجام نشد؛ گزارش رویدادها را بررسی کنید</string>
+    <string name="vpn_all_profiles_failed">هیچ پروفایل سالمی برای ادامهٔ اتصال پیدا نشد</string>
+    <string name="vpn_process_stopped">هستهٔ VPN به‌طور غیرمنتظره متوقف شد. تلاش خودکار متوقف شده است؛ برای تلاش دوباره روی اتصال بزنید.</string>
+    <string name="vpn_tunnel_verification_failed">تونل شروع شد، اما عبور امن ترافیک اینترنت تأیید نشد. شبکه یا پروفایل را بررسی و دوباره تلاش کنید.</string>
+    <string name="vpn_tun_establish_failed">اندروید نتوانست تونل VPN را ایجاد کند. مجوز VPN و نبود VPN هم‌زمان دیگر را بررسی کنید.</string>
+    <string name="vpn_socket_protection_failed">VPN نتوانست ترافیک خروجی را به شبکهٔ فیزیکی متصل کند. شبکه را تغییر دهید و دوباره تلاش کنید.</string>
+    <string name="vpn_native_config_rejected">هستهٔ VPN تنظیمات این پروفایل را نپذیرفت. اشتراک را تازه‌سازی کنید یا پروفایل دیگری برگزینید.</string>
+    <string name="vpn_core_version_failed">نسخهٔ هستهٔ VPN همراه برنامه با این نسخهٔ برنامه سازگار نیست.</string>
+    <string name="vpn_core_setup_failed">کتابخانهٔ همراه VPN در مرحلهٔ راه‌اندازی اولیه آماده نشد. تلاش خودکار متوقف شده است.</string>
+    <string name="vpn_core_command_failed">سرور فرمان هستهٔ VPN شروع نشد. تلاش خودکار متوقف شده است.</string>
+    <string name="vpn_core_network_monitor_failed">پایش شبکهٔ فیزیکی اندروید شروع نشد. شبکه را تغییر دهید و دوباره تلاش کنید.</string>
+    <string name="vpn_core_service_start_failed">سرویس بومی VPN نتوانست این کانفیگ را شروع کند. تلاش خودکار متوقف شده است.</string>
+    <string name="vpn_core_post_start_failed">بررسی‌های پس از شروع هستهٔ VPN ناموفق بود. تلاش خودکار متوقف شده است.</string>
+    <string name="vpn_native_start_failed">هستهٔ VPN شروع نشد. تلاش خودکار متوقف شده است؛ یک پروفایل انتخاب و دوباره تلاش کنید.</string>
+    <string name="vpn_retry_blocked">درخواست اتصال بدون فرمان جدید کاربر مسدود شد.</string>
+    <string name="vpn_stop_failed">فرمان توقف VPN ارسال نشد. تنظیمات VPN اندروید را باز و FOXConnect را قطع کنید.</string>
+    <string name="vpn_transport_unsupported">این پروفایل از XHTTP یا mKCP استفاده می‌کند که هستهٔ libbox 1.14 همراه برنامه پشتیبانی نمی‌کند. پروفایل نگه داشته شده است، اما این نسخه نمی‌تواند با آن متصل شود.</string>
+</resources>
