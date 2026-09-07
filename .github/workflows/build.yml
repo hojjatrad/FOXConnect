@@ -36,14 +36,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Install pinned Android toolchain
         run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
+      - name: Restore exact libbox cache
+        uses: actions/cache@v4
+        with:
+          path: core/engine/libs/libbox.aar
+          key: libbox-${{ runner.os }}-v1.14.0-0b8995879f29a9b98ee027bc17b75e101445b238-go${{ env.GO_VERSION }}-ndk${{ env.NDK_VERSION }}
       - name: Build and verify pinned libbox
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/${NDK_VERSION}"
           export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          ./scripts/build-libbox.sh
+          if [[ ! -f core/engine/libs/libbox.aar ]]; then
+            ./scripts/build-libbox.sh
+          fi
           ./scripts/verify-libbox.sh
-      - name: Unit tests and lint
-        run: ./gradlew --no-daemon --max-workers=1 testDebugUnitTest lintDebug --stacktrace
+      - name: Unit tests and application lint
+        run: ./gradlew --no-daemon --max-workers=1 testDebugUnitTest :app:lintDebug --stacktrace
       - name: Build diagnostic split APKs
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: ./gradlew --no-daemon --max-workers=1 assembleDebug --stacktrace
