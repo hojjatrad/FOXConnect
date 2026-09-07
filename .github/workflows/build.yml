@@ -56,8 +56,17 @@ jobs:
         with:
           path: core/engine/libs/libbox.aar
           key: ${{ steps.libbox-cache.outputs.cache-primary-key }}
-      - name: Unit tests and application lint
-        run: ./gradlew --no-daemon --max-workers=1 testDebugUnitTest :app:lintDebug --stacktrace
+      - name: Install checksum-pinned native schema checker
+        run: |
+          set -euo pipefail
+          checker="$(./scripts/install-sing-box-check.sh "$RUNNER_TEMP/sing-box-check")"
+          test -x "$checker"
+          printf 'SING_BOX_CHECK=%s\n' "$checker" >> "$GITHUB_ENV"
+      - name: Unit tests, mandatory native schema gate, and application lint
+        run: |
+          set -euo pipefail
+          test -x "$SING_BOX_CHECK"
+          ./gradlew --no-daemon --max-workers=1 testDebugUnitTest :app:lintDebug --stacktrace
       - name: Build diagnostic split APKs
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: ./gradlew --no-daemon --max-workers=1 assembleDebug --stacktrace

@@ -89,6 +89,13 @@ fun HomeScreen(
     onLogsClick: () -> Unit,
     onConfigsClick: () -> Unit,
 ) {
+    val displayedConnection = HomePresentationPolicy.displayedConnection(
+        state = snapshot.state,
+        runtimeName = snapshot.profileName,
+        runtimeProtocol = snapshot.protocol,
+        selectedName = selectedProfile?.name,
+        selectedProtocol = selectedProfile?.protocol,
+    )
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().background(CanvasColor),
     ) {
@@ -113,7 +120,7 @@ fun HomeScreen(
                 )
                 Spacer(Modifier.height(12.dp))
                 ConnectionSelector(
-                    profile = selectedProfile,
+                    connection = displayedConnection,
                     enabled = snapshot.state is ConnectionState.Disconnected || snapshot.state is ConnectionState.Failed,
                     onClick = onProfileClick,
                 )
@@ -293,7 +300,7 @@ private fun DrawScope.drawFailureGlyph(color: Color) {
 }
 
 @Composable
-private fun ConnectionSelector(profile: ConnectableProfile?, enabled: Boolean, onClick: () -> Unit) {
+private fun ConnectionSelector(connection: DisplayedConnection, enabled: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -303,12 +310,18 @@ private fun ConnectionSelector(profile: ConnectableProfile?, enabled: Boolean, o
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ProtocolGlyph(protocol = profile?.protocol, color = if (enabled) PrimaryIdleColor else MutedColor.copy(alpha = 0.55f))
+        ProtocolGlyph(protocol = connection.protocol, color = if (enabled) PrimaryIdleColor else MutedColor.copy(alpha = 0.55f))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.selected_connection), style = MaterialTheme.typography.bodySmall, color = MutedColor)
             Text(
-                text = profile?.let { "${it.name} · ${it.protocol.displayName}" } ?: stringResource(R.string.no_config),
+                stringResource(if (connection.isRuntimeActive) R.string.active_connection else R.string.selected_connection),
+                style = MaterialTheme.typography.bodySmall,
+                color = MutedColor,
+            )
+            Text(
+                text = connection.name?.let { name ->
+                    connection.protocol?.let { "$name · ${it.displayName}" } ?: name
+                } ?: stringResource(R.string.no_config),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (enabled) InkColor else MutedColor,
                 maxLines = 1,

@@ -17,21 +17,20 @@ import com.foxconnect.core.model.VmessProfile
 import com.foxconnect.core.model.WireGuardPeer
 import com.foxconnect.core.model.WireGuardProfile
 import org.junit.Assert.fail
-import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** Optional integration gate: set SING_BOX_CHECK to the exact pinned desktop CLI. */
+/** Mandatory integration gate: CI provisions the exact checksum-pinned desktop CLI. */
 class SingBoxNativeSchemaTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
     @Test
     fun `pinned native checker accepts every generated protocol config`() {
-        val configuredChecker = System.getenv("SING_BOX_CHECK")
-        assumeTrue("SING_BOX_CHECK is not configured", !configuredChecker.isNullOrBlank())
-        val checker = requireNotNull(configuredChecker)
+        val checker = checkNotNull(System.getenv("SING_BOX_CHECK")?.takeIf(String::isNotBlank)) {
+            "SING_BOX_CHECK is mandatory; run scripts/install-sing-box-check.sh and export its path"
+        }
 
         val version = run(checker, "version")
         if (!version.contains("sing-box version 1.14.0") || !version.contains(PINNED_REVISION)) {

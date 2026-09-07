@@ -2,9 +2,11 @@ package com.foxconnect.core.engine
 
 internal data class FailoverSettings(
     val enabled: Boolean = true,
-    val watchdogIntervalMs: Long = 1_500,
-    val probeTimeoutMs: Int = 1_500,
-    val failureThreshold: Int = 2,
+    val watchdogIntervalMs: Long = 3_000,
+    val probeTimeoutMs: Int = 3_000,
+    // One failed round already means the primary plus every independent
+    // confirmation origin failed; a second full round only delays recovery.
+    val failureThreshold: Int = 1,
     val cooldownMs: Long = 60_000,
     val returnToPreferred: Boolean = false,
     val returnCheckIntervalMs: Long = 5 * 60_000,
@@ -38,7 +40,7 @@ internal data class FailoverSettings(
 
     /** Worst-case hard-failure detection target, excluding native reconnect time. */
     val maximumDetectionMs: Long
-        get() = watchdogIntervalMs * failureThreshold + probeTimeoutMs.toLong() * failureThreshold
+        get() = (watchdogIntervalMs + (probeTimeoutMs.toLong() * 2L)) * failureThreshold
 }
 
 internal class QualitySwitchHysteresis(private val requiredConsecutiveSamples: Int) {

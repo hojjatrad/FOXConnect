@@ -36,6 +36,25 @@ data class TunnelEvent(
     val code: TunnelEventCode,
 )
 
+internal object TunnelEventCodec {
+    fun encode(entries: List<TunnelEvent>): ByteArray = entries.joinToString("\n") {
+        "${it.timestampEpochMs.coerceAtLeast(0)}|${it.code.name}"
+    }.toByteArray(Charsets.US_ASCII)
+
+    fun decode(payload: ByteArray, limit: Int): List<TunnelEvent> =
+        payload.toString(Charsets.US_ASCII).lineSequence()
+            .filter(String::isNotBlank)
+            .take(limit.coerceAtLeast(0))
+            .mapNotNull { line ->
+                val pieces = line.split('|', limit = 2)
+                val timestamp = pieces.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
+                val code = pieces.getOrNull(1)?.let { runCatching { TunnelEventCode.valueOf(it) }.getOrNull() }
+                    ?: return@mapNotNull null
+                TunnelEvent(timestamp.coerceAtLeast(0), code)
+            }
+            .toList()
+}
+
 /** Bounded diagnostic log containing codes only: never endpoints, names, URLs, or credentials. */
 class TunnelEventLog(context: Context) {
     private val directory = context.applicationContext.filesDir.resolve("diagnostics").apply { mkdirs() }
@@ -45,8 +64,7 @@ class TunnelEventLog(context: Context) {
     fun append(code: TunnelEventCode, timestampMs: Long = System.currentTimeMillis()) = withProcessLock {
         val entries = readUnlocked().takeLast(MAX_ENTRIES - 1) +
             TunnelEvent(timestampMs.coerceAtLeast(0), code)
-        val payload = entries.joinToString("\n") { "${it.timestampEpochMs}|${it.code.name}" }
-            .toByteArray(Charsets.US_ASCII)
+        val payload = TunnelEventCodec.encode(entries)
         require(payload.size <= MAX_BYTES)
         val output = file.startWrite()
         try {
@@ -64,17 +82,7 @@ class TunnelEventLog(context: Context) {
     private fun readUnlocked(): List<TunnelEvent> {
         if (!file.baseFile.isFile || file.baseFile.length() !in 0..MAX_BYTES.toLong()) return emptyList()
         return runCatching {
-            file.readFully().toString(Charsets.US_ASCII).lineSequence()
-                .filter(String::isNotBlank)
-                .take(MAX_ENTRIES)
-                .mapNotNull { line ->
-                    val pieces = line.split('|', limit = 2)
-                    val timestamp = pieces.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
-                    val code = pieces.getOrNull(1)?.let { runCatching { TunnelEventCode.valueOf(it) }.getOrNull() }
-                        ?: return@mapNotNull null
-                    TunnelEvent(timestamp, code)
-                }
-                .toList()
+            TunnelEventCodec.decode(file.readFully(), MAX_ENTRIES)
         }.getOrDefault(emptyList())
     }
 

@@ -47,10 +47,13 @@ internal object CoreFailureClassifier {
         val messages = chain.mapNotNull { it.message?.lowercase(java.util.Locale.ROOT) }.joinToString(" ")
         val stage = chain.filterIsInstance<CoreStartFailure>().firstOrNull()?.stage
         return when {
-            "health_verification_failed" in messages -> "tunnel_verification_failed"
+            "health_verification_failed" in messages ||
+                "native_traffic_not_observed" in messages -> "tunnel_verification_failed"
             "vpn_permission" in messages || "permission_revoked" in messages -> "vpn_permission_revoked"
             "tun_" in messages || "opentun" in messages || "builder.establish" in messages -> "tun_establish_failed"
-            "protect_outbound_socket_failed" in messages -> "socket_protection_failed"
+            "protect_outbound_socket_failed" in messages ||
+                "socket_protection_not_observed" in messages -> "socket_protection_failed"
+            "physical_network_not_observed" in messages -> "core_network_monitor_failed"
             stage == CoreStartStage.CONFIG_CHECK || "checkconfig" in messages ||
                 "check config" in messages || "parse config" in messages -> "native_config_rejected"
             stage == CoreStartStage.VERSION || "version_mismatch" in messages -> "libbox_version_mismatch"
@@ -70,6 +73,7 @@ class FoxVpnService : VpnService() {
     private val store by lazy { EngineConfigStore(this) }
     private val healthStore by lazy { ProfileHealthStore(this) }
     private val eventLog by lazy { TunnelEventLog(this) }
+    private val healthVerifier by lazy { TunnelHealthVerifier() }
     private val runtimePublisher by lazy { TunnelStatePublisher(this) }
     private val authorization by lazy { TunnelRunAuthorization(this) }
     private val recoveryRateLimiter by lazy { ServiceRecoveryRateLimiter(this) }
@@ -300,11 +304,12 @@ class FoxVpnService : VpnService() {
         try {
             nextCore.start(candidate.json)
             core = nextCore
-            val verification = TunnelHealthVerifier().awaitVerified(
+            val verification = healthVerifier.awaitVerified(
                 maxAttempts = if (switching) 1 else 2,
-                timeoutMs = if (switching) settings.probeTimeoutMs else 3_000,
+                timeoutMs = if (switching) FAILOVER_VERIFICATION_TIMEOUT_MS else INITIAL_VERIFICATION_TIMEOUT_MS,
             )
             if (!verification.successful) error("health_verification_failed")
+            awaitDataPathEvidence(nextCore)?.let(::error)
             val verifiedAt = System.currentTimeMillis()
             failoverPolicy?.activate(index)
             failoverPolicy?.recordHealthy(index, verification.latencyMs, verifiedAt)
@@ -325,7 +330,9 @@ class FoxVpnService : VpnService() {
             )
             updateNotification(getString(R.string.vpn_notification_connected), candidate.profileName)
             statsJob?.cancel()
-            statsJob = scope.launch { TunnelStatsMonitor().run() }
+            statsJob = scope.launch {
+                TunnelStatsMonitor { core?.trafficSnapshot() }.run()
+            }
             startNotificationStats(candidate.profileName)
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
@@ -337,6 +344,17 @@ class FoxVpnService : VpnService() {
             if (switching) engageLeakGuard()
             throw error
         }
+    }
+
+    private suspend fun awaitDataPathEvidence(candidateCore: TypedLibboxCore): String? {
+        repeat(DATA_PATH_EVIDENCE_ATTEMPTS) { attempt ->
+            val pathFailure = DataPathReadinessVerifier.failureReason(candidateCore.dataPathSnapshot())
+            val trafficObserved = DataPathReadinessVerifier.nativeTrafficObserved(candidateCore.trafficSnapshot())
+            if (pathFailure == null && trafficObserved) return null
+            if (attempt + 1 < DATA_PATH_EVIDENCE_ATTEMPTS) delay(DATA_PATH_EVIDENCE_POLL_MS)
+        }
+        return DataPathReadinessVerifier.failureReason(candidateCore.dataPathSnapshot())
+            ?: "native_traffic_not_observed"
     }
 
     private fun startNotificationStats(profileName: String) {
@@ -368,7 +386,7 @@ class FoxVpnService : VpnService() {
             var lastReturnCheck = System.currentTimeMillis()
             while (isActive && !explicitStop) {
                 delay(settings.watchdogIntervalMs)
-                val result = TunnelHealthVerifier().probeTunnel(settings.probeTimeoutMs)
+                val result = healthVerifier.probeTunnel(settings.probeTimeoutMs)
                 runtimePublisher.healthChecked(result)
                 val now = System.currentTimeMillis()
                 if (result.successful) {
@@ -802,6 +820,10 @@ class FoxVpnService : VpnService() {
         const val KEY_QUALITY_SWITCH_ENABLED = "quality_switch_enabled"
         const val KEY_WEAK_LATENCY_THRESHOLD_MS = "weak_latency_threshold_ms"
         private const val KEY_LANGUAGE = "language"
+        private const val INITIAL_VERIFICATION_TIMEOUT_MS = 8_000
+        private const val FAILOVER_VERIFICATION_TIMEOUT_MS = 6_000
+        private const val DATA_PATH_EVIDENCE_ATTEMPTS = 25
+        private const val DATA_PATH_EVIDENCE_POLL_MS = 100L
         private const val QUALITY_PERSIST_INTERVAL_MS = 30_000L
         private const val CHANNEL_ID = "vpn_tunnel"
         private const val NOTIFICATION_ID = 1001

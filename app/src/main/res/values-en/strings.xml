@@ -6,6 +6,7 @@
     <string name="status_failed">Connection failed</string>
     <string name="status_switching">Switching to the next configuration…</string>
     <string name="selected_connection">Selected connection</string>
+    <string name="active_connection">Current tunnel candidate</string>
     <string name="no_config">No configuration selected</string>
     <string name="choose_config_hint">Import a proxy link or standard WireGuard file</string>
     <string name="exit_ip">Exit IP</string>
