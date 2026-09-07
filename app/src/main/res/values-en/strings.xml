@@ -157,7 +157,7 @@
     <string name="failover_ready">Automatic failover enabled · %1$d configurations available</string>
     <string name="failover_disabled">Automatic failover disabled · %1$d configurations</string>
     <string name="update_section_title">Application updates</string>
-    <string name="update_periodic_checks">Check periodically every 24 hours</string>
+    <string name="update_periodic_checks">Check and notify automatically every 24 hours</string>
     <string name="update_include_prereleases">Show experimental pre-releases</string>
     <string name="update_privacy_note">Checks fetch public metadata from the fixed official repository only. Background checks never download or install an APK, and send no data, configuration, or identifier.</string>
     <string name="update_check_now">Check now</string>
@@ -167,7 +167,7 @@
     <string name="update_available_version">%1$s · code %2$d · %3$s</string>
     <string name="update_prerelease_warning">This is an experimental pre-release and may not be stable.</string>
     <string name="update_published_at">Published: %1$s</string>
-    <string name="update_download_and_verify">Download and verify</string>
+    <string name="update_download_and_verify">Download securely, verify, and install</string>
     <string name="update_downloading">Downloading and checking size, SHA-256, package, version, ABI, and signature…</string>
     <string name="update_verified_ready">The APK passed verification. Installation proceeds only with your approval in Android’s package installer.</string>
     <string name="update_install">Open Android package installer</string>
@@ -188,5 +188,6 @@
     <string name="update_notification_channel">FOXConnect updates</string>
     <string name="update_notification_channel_description">Notifies about a new version only; nothing is downloaded automatically</string>
     <string name="update_notification_title">A FOXConnect update is available</string>
-    <string name="update_notification_body">%1$s (code %2$d); tap to review and download manually</string>
+    <string name="update_notification_body">%1$s (code %2$d); tap to download securely and install</string>
+    <string name="update_notification_action">Review and install</string>
 </resources>

@@ -22,8 +22,8 @@ android {
         applicationId = "com.foxconnect.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.4.9-phase4-alpha10-data-path"
+        versionCode = 16
+        versionName = "0.5.0-phase4-alpha11-auto-update"
 
         buildConfigField("String", "GITHUB_REPOSITORY", "\"hojjatrad/FOXConnect\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

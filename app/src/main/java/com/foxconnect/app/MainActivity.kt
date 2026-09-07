@@ -433,24 +433,21 @@ class MainActivity : AppCompatActivity() {
                             if (update != null) {
                                 updateState = UpdateUiState.Downloading(update)
                                 lifecycleScope.launch {
-                                    updateState = when (val result = updateRepository.downloadAndVerify(update)) {
-                                        is UpdatePreparationResult.Ready ->
-                                            UpdateUiState.Ready(result.update, result.apkPath)
-                                        is UpdatePreparationResult.Failure ->
-                                            UpdateUiState.Failed(result.reason)
+                                    when (val result = updateRepository.downloadAndVerify(update)) {
+                                        is UpdatePreparationResult.Ready -> {
+                                            val ready = UpdateUiState.Ready(result.update, result.apkPath)
+                                            updateState = ready
+                                            handOffVerifiedUpdate(ready)
+                                        }
+                                        is UpdatePreparationResult.Failure -> {
+                                            updateState = UpdateUiState.Failed(result.reason)
+                                        }
                                     }
                                 }
                             }
                         },
                         onInstallUpdate = {
-                            val ready = updateState as? UpdateUiState.Ready
-                            if (ready != null) {
-                                when (UpdateInstaller.handOff(this, ready.apkPath)) {
-                                    InstallHandoff.Started -> Unit
-                                    InstallHandoff.PermissionRequired -> toast(R.string.update_install_permission)
-                                    InstallHandoff.Failed -> toast(R.string.update_install_failed)
-                                }
-                            }
+                            (updateState as? UpdateUiState.Ready)?.let(::handOffVerifiedUpdate)
                         },
                     )
                 }
@@ -811,6 +808,14 @@ class MainActivity : AppCompatActivity() {
             periodic = value.periodicUpdateChecks,
             prereleases = value.includePrereleases,
         )
+    }
+
+    private fun handOffVerifiedUpdate(ready: UpdateUiState.Ready) {
+        when (UpdateInstaller.handOff(this, ready.apkPath)) {
+            InstallHandoff.Started -> Unit
+            InstallHandoff.PermissionRequired -> toast(R.string.update_install_permission)
+            InstallHandoff.Failed -> toast(R.string.update_install_failed)
+        }
     }
 
     private suspend fun checkForUpdates(includePrereleases: Boolean): UpdateUiState =

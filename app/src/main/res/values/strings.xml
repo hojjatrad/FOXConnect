@@ -157,7 +157,7 @@
     <string name="failover_ready">سوییچ خودکار فعال · %1$d کانفیگ در دسترس</string>
     <string name="failover_disabled">سوییچ خودکار غیرفعال · %1$d کانفیگ</string>
     <string name="update_section_title">به‌روزرسانی برنامه</string>
-    <string name="update_periodic_checks">بررسی دوره‌ای هر ۲۴ ساعت</string>
+    <string name="update_periodic_checks">بررسی و اعلان خودکار هر ۲۴ ساعت</string>
     <string name="update_include_prereleases">نمایش پیش‌انتشارهای آزمایشی</string>
     <string name="update_privacy_note">بررسی فقط metadata عمومی مخزن رسمی را دریافت می‌کند. بررسی پس‌زمینه هرگز APK را دانلود یا نصب نمی‌کند و هیچ داده، کانفیگ یا شناسه‌ای ارسال نمی‌شود.</string>
     <string name="update_check_now">اکنون بررسی کن</string>
@@ -167,7 +167,7 @@
     <string name="update_available_version">%1$s · کد %2$d · %3$s</string>
     <string name="update_prerelease_warning">این نسخه آزمایشی است و ممکن است پایدار نباشد.</string>
     <string name="update_published_at">زمان انتشار: %1$s</string>
-    <string name="update_download_and_verify">دانلود و اعتبارسنجی</string>
+    <string name="update_download_and_verify">دانلود امن، اعتبارسنجی و نصب</string>
     <string name="update_downloading">در حال دانلود و بررسی اندازه، SHA-256، بسته، نسخه، معماری و امضا…</string>
     <string name="update_verified_ready">APK با موفقیت اعتبارسنجی شد. نصب فقط با تأیید شما در نصب‌کنندهٔ Android انجام می‌شود.</string>
     <string name="update_install">بازکردن نصب‌کنندهٔ Android</string>
@@ -188,5 +188,6 @@
     <string name="update_notification_channel">به‌روزرسانی‌های FOXConnect</string>
     <string name="update_notification_channel_description">فقط وجود نسخهٔ جدید را اعلام می‌کند؛ دانلود خودکار انجام نمی‌شود</string>
     <string name="update_notification_title">به‌روزرسانی FOXConnect موجود است</string>
-    <string name="update_notification_body">%1$s (کد %2$d)؛ برای بررسی و دانلود دستی لمس کنید</string>
+    <string name="update_notification_body">%1$s (کد %2$d)؛ برای دانلود امن و نصب لمس کنید</string>
+    <string name="update_notification_action">مشاهده و نصب</string>
 </resources>

@@ -1,12 +1,11 @@
 # FOXConnect
 
-> وضعیت: **فاز ۴ آلفا ۱۰ تشخیصی؛ CI سبز و آزمون فیزیکی در انتظار**
-> آلفا ۹ در آزمون دستگاه شکست خورد: `Connected` کاذب بود و مرورگر، برنامه‌ها، دانلود و
-> آپلود اینترنت نداشتند. history ثابت کرد `route.auto_detect_interface` در آلفاهای ۷ تا ۹
-> برخلاف مستندات خاموش مانده بود و نام profile در home نیز از preference قدیمی می‌آمد.
-> آلفا ۱۰ route/protect را اصلاح می‌کند و Connected را به HTTPS واقعی داخل TUN به‌علاوهٔ
-> شواهد TUN، شبکهٔ فیزیکی، protected upstream و RX/TX بومی libbox مشروط می‌کند. این نسخه
-> تا عبور CI و آزمون واقعی browser/app/DNS/upload/download و چند failover، production نیست.
+> وضعیت: **فاز ۴ آلفا ۱۱ تشخیصی؛ updater خودکار در انتظار CI و آزمون**
+> آلفا ۹ در آزمون دستگاه شکست خورد. آلفا ۱۰ route/protect و شرط‌های ضد Connected کاذب را
+> اصلاح کرد و CI را پاس کرد، اما data path آن هنوز روی همان دستگاه/شبکه پذیرش فیزیکی نشده است.
+> آلفا ۱۱ بدون تغییر engine، اعلان خودکار Releaseهای GitHub و جریان یک‌دکمه‌ای
+> دانلود/اعتبارسنجی/بازکردن نصب‌کننده را اضافه می‌کند. این نسخه تا عبور CI و آزمون واقعی
+> updater به‌علاوهٔ browser/app/DNS/upload/download و چند failover، production نیست.
 
 FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات و telemetry است. رابط فارسی
 به‌صورت پیش‌فرض و RTL است و ترجمهٔ انگلیسی LTR نیز دارد. شناسهٔ موقت release
@@ -151,16 +150,18 @@ export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/28.0.13004108"
 
 ## به‌روزرسانی امن از GitHub
 
-مخزن رسمی ثابت برنامه `https://github.com/hojjatrad/FOXConnect` است. بررسی دستی از
-Settings در دسترس است؛ بررسی دوره‌ای ۲۴ ساعته پیش‌فرض خاموش است و فقط با انتخاب کاربر
-فعال می‌شود. کانال پایدار پیش‌فرض است و پیش‌انتشارها نیز اختیاری‌اند.
+مخزن رسمی ثابت برنامه `https://github.com/hojjatrad/FOXConnect` است. بررسی دستی همیشه
+در Settings در دسترس است. از آلفا ۱۱ بررسی و اعلان دوره‌ای به‌صورت پیش‌فرض فعال است:
+نخستین کار واجد شرایط پس از ۱۵ دقیقه و سپس هر ۲۴ ساعت با WorkManager و فقط هنگام وجود
+شبکه اجرا می‌شود. کاربر می‌تواند آن را خاموش کند. build تشخیصی pre-releaseهای debug را
+به‌صورت پیش‌فرض می‌بیند؛ کانال production همچنان stable است مگر کاربر خلاف آن را انتخاب کند.
 
-بررسی پس‌زمینه فقط metadata عمومی GitHub را با HTTPS دریافت و در صورت وجود نسخهٔ
-جدید notification نشان می‌دهد؛ APK هرگز در پس‌زمینه دانلود یا نصب نمی‌شود. دانلود فقط
-پس از لمس دکمهٔ کاربر انجام می‌شود. پیش از تحویل به نصب‌کنندهٔ Android، updater این
-موارد را fail-closed کنترل می‌کند: مخزن/URL رسمی، محدودیت اندازه، versionCode جدیدتر،
-ABI تک‌معماری سازگار، فایل SHA-256 همراه، hash واقعی، application ID و گواهی امضای
-یکسان با برنامهٔ نصب‌شده. نصب نهایی همیشه به تأیید سیستم Android نیاز دارد.
+بررسی پس‌زمینه فقط metadata عمومی GitHub را با HTTPS دریافت و در صورت وجود versionCode
+جدید notification همراه دکمهٔ «مشاهده و نصب» نشان می‌دهد؛ APK هرگز در پس‌زمینه دانلود
+یا نصب نمی‌شود. پس از لمس دکمهٔ کاربر، APK دانلود می‌شود و updater مخزن/URL رسمی، محدودیت
+اندازه، SHA-256 همراه و digest واقعی، versionCode جدیدتر، ABI تک‌معماری، application ID و
+گواهی امضای یکسان را fail-closed کنترل می‌کند. فقط بعد از عبور همهٔ gateها نصب‌کنندهٔ
+Android باز می‌شود و نصب نهایی همیشه به تأیید خود کاربر در سیستم نیاز دارد.
 
 قرارداد asset برای نسخهٔ production:
 
@@ -235,8 +236,17 @@ strict-TLS HTTPS response. Native libbox status is the primary RX/TX source.
 Home uses the service's runtime profile/protocol during Connecting, Switching, and
 Connected. Healthy-state checks rotate providers to reduce overhead; a primary failure
 is confirmed by the other independent providers before recovery begins. Ranked
-continuous recovery, cooldowns, quality hysteresis, Kill Switch behavior, lifecycle
-recovery, and the token-free updater remain in place.
+continuous recovery, cooldowns, quality hysteresis, Kill Switch behavior, and lifecycle
+recovery remain in place.
+
+Alpha 11 enables token-free GitHub update notices by default. WorkManager performs the
+first eligible metadata-only check after 15 minutes and then every 24 hours on a connected
+network. Diagnostic builds include debug pre-releases by default; production remains on
+the stable channel. Background work never downloads or installs APKs. A notification
+button opens the verified update flow; one user action downloads the APK, validates its
+repository URL, size, SHA-256, package, newer version, ABI, and signing certificate, then
+opens Android's package installer for final user approval. Users can disable periodic
+checks or pre-releases in Settings.
 
 CI now downloads the official sing-box 1.14.0 Linux checker with a pinned SHA-256 and
 revision, and the generated-config schema test fails instead of skipping when the exact
