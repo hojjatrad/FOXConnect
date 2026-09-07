@@ -200,7 +200,7 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
   ۱۰ ثانیه و جلوگیری از نشت فقط پس از آزمون دستگاه قابل تأیید است.
 - محافظ داخلی جای lockdown سیستم را نمی‌گیرد؛ کاربر باید «Block connections without
   VPN» اندروید را برای حفاظت در برابر force-stop فعال کند.
-- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ updater آلفا ۸ تا build/CI و تست دستگاه diagnostic است.
+- فرم‌های دستی غیر VLESS، split tunnel و UI پیشرفتهٔ DNS/rules هنوز باقی مانده‌اند؛ updater آلفا ۸ CI را پاس کرده ولی تا تست دستگاه diagnostic است.
 
 ## License
 

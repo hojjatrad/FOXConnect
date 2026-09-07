@@ -1,19 +1,16 @@
 # FOXConnect — handoff
 
-آخرین به‌روزرسانی: 2026-09-06
+آخرین به‌روزرسانی: 2026-09-07
 
 ## وضعیت فعال
 
-نسخهٔ فعال: **`0.4.6-phase4-alpha7-diagnostic`**، `versionCode=12`.
-این build فقط تشخیصی است. تست‌ها و schema gate سبز هستند، اما data path آلفا ۷ هنوز
-روی دستگاه تأیید نشده و نباید production-ready معرفی شود.
+نسخهٔ فعال: **`0.4.7-phase4-alpha8-updater`**، `versionCode=13`.
+CI، lint، assembly، امضا، ABI و alignment سبز هستند؛ build همچنان diagnostic است و
+updater/notification/installer و regression اتصال باید روی دستگاه تأیید شوند.
 
-گزارش فیزیکی آلفا ۶: libbox startup، command server و Android TUN موفق شدند؛ نتیجه
-به Failed پایدار «تونل شروع شد، اما عبور امن ترافیک اینترنت تأیید نشد» رسید. این
-گزارش blocker را از native startup به مسیر بسته‌ها محدود کرد. audit سپس mismatch
-قطعی `auto_route=true` و `auto_detect_interface=false` را یافت که مسیر فراخوانی
-`VpnService.protect()` برای سوکت upstream را غیرفعال می‌کرد و امکان loop داخل TUN
-را می‌داد. آلفا ۷ این invariant را اصلاح و هر لایهٔ data path را جدا تشخیص می‌دهد.
+کاربر اتصال واقعی، DNS و عبور ترافیک آلفا ۷ را پس از اصلاح mismatch قطعی
+`auto_route=true` و `auto_detect_interface=false` تأیید کرد. آلفا ۸ هیچ sourceای در
+VPN engine تغییر نداده و فقط updater و زیرساخت GitHub را افزوده است.
 
 ## یافته‌های قطعی
 
@@ -115,44 +112,44 @@ missing default domain resolver شکست می‌خورد.
 import می‌شود و هر ۱۷ profile در repository باقی می‌مانند. هیچ دادهٔ واقعی subscription
 در source/test/log/doc وجود ندارد.
 
-## APK آلفا ۷
+## APK آلفا ۸
 
-- مسیر: `/home/user/FOXConnect-artifacts/FOXConnect-alpha7-diagnostic-arm64.apk`
-- نسخه: `0.4.6-phase4-alpha7-diagnostic (12)`
+- مسیر موقت تا انتشار: `/home/user/FOXConnect-artifacts/FOXConnect-v13-debug-arm64-v8a.apk`
+- نسخه: `0.4.7-phase4-alpha8-updater (13)`
 - package: `com.foxconnect.app.debug`
 - ABI: فقط `arm64-v8a`
-- اندازه: `46,684,910` bytes
-- SHA-256: `93dd2b7895a13b0262015262032ac0b9300d8251ebaba513ed7bd9190513d3e4`
-- امضا: debug، APK Signature Scheme v2
-- libbox LOAD alignment: `0x4000` (16 KiB)
+- اندازه: `46,743,127` bytes
+- SHA-256: `c5d45705025120533d2c955698e7c0f0c52f9f983d0fbc01bdbc42f2a3b40a34`
+- امضا: همان debug certificate آلفا ۷، APK Signature Scheme v2
+- ZIP/native alignment: 16 KiB؛ libbox LOAD alignment: `0x4000`
 
-metadata همراه: `/home/user/FOXConnect-artifacts/SHA256SUMS` و `VERIFICATION.txt`.
-archive منبع در `/home/user/FOXConnect-project.zip` با checksum companion قرار می‌گیرد؛
-AAR و build outputs داخل archive نیستند.
+metadata همراه: `FOXConnect-v13-debug-arm64-v8a.apk.sha256`، `SHA256SUMS` و
+`VERIFICATION.txt`. پس از تأیید assetهای GitHub Release، APKهای محلی و archive قدیمی
+پاک می‌شوند؛ AAR، cache و build outputs داخل Git نیستند.
 
 ## اعتبارسنجی سبز
 
-- ۶۹ تست parser/storage/engine بدون failure یا skip
-- parser tests، شامل GZIP/Base64/17 VLESS
-- storage tests، شامل persistence هر ۱۷ profile
-- engine tests، stage-classifier regressions و lifecycle/retry policy tests
-- schema gate واقعی برای همهٔ خانواده‌های پشتیبانی‌شده، VLESS Reality و پنج V2Ray transport
-- `:app:compileDebugKotlin`
-- `:app:lintDebug`: صفر error، ۱۲ warning و ۲ hint غیرمسدودکننده
-- `:app:assembleDebug`
-- manifest/APK: VPN service واقعاً `:vpn`، non-exported و فقط `BOOT_COMPLETED`
-- ARM64-only، signature v2، ZIP/zipalign 16 KiB و native LOAD align
+- GitHub Actions run `34086712348` روی commit `5db147ef9ddf973db3e4dae2160fb655a7afb8be` موفق
+- ۷۴ تست parser/storage/engine/updater بدون failure یا skip (۶۹ قبلی + ۵ updater)
+- parser/storage regressions GZIP/Base64/17 VLESS و lifecycle/routing قبلی محفوظ
+- updater tests: repository pin، stable/pre-release، downgrade/equal، channel و URL hostile
+- `:app:lintDebug` و `:app:assembleDebug` موفق؛ هر دو split ARM64/ARMv7 ساخته شدند
+- manifest/APK: FileProvider محدود، cleartext خاموش، VPN service همان `:vpn` و non-exported
+- ARM64-only، certificate برابر آلفا ۷، signature v2، ZIP/zipalign 16 KiB و LOAD align
+- scan نهایی: بدون PAT/credential، endpoint fixture یا `OWNER/FOXConnect`
+- diff قطعی source در `core/engine/src` نسبت به آلفا ۷: صفر فایل
 
 ## تست بعدی دستگاه
 
-1. آلفا ۷ با code 12 را نصب کنید. نسخه در Settings خود برنامه نمایش داده می‌شود.
-2. auto-connect باید پیش‌فرض خاموش باشد؛ نصب update نباید خودکار Connecting شود.
-3. همان profile پشتیبانی‌شده‌ای را که در آلفا ۶ به verification failure رسید انتخاب و Connect را فقط یک بار بزنید.
-4. اگر Connected شد، بلافاصله دو سایت HTTPS، یک دامنهٔ تازه برای آزمون DNS و RX/TX را بررسی کنید؛ سپس Disconnect و اتصال دوباره را تست کنید.
-5. اگر failure رخ داد، یکی از دسته‌های physical network/bootstrap DNS/socket routing/secure DNS/TLS/HTTPS/route باید در متن و Connection events دیده شود؛ نباید بین ۱۷ profile گردش کند.
-6. UI باید باز بماند و پس از failure یا stop نباید اتصال خودکار تکرار شود.
-7. فقط پس از تأیید مرور و DNS، یک failover واقعی را با دو profile آزمایش کنید.
-8. اگر باز هم failure بود، نسخهٔ نمایش‌داده‌شده، متن Failed و دو رویداد آخر Logs کافی است؛ logcat یا دادهٔ profile لازم نیست.
+1. آلفا ۸ code 13 را روی آلفا ۷ نصب کنید؛ certificate یکسان است و داده‌ها باید باقی بمانند.
+2. بدون روشن‌کردن auto-connect، اتصال قبلی را تکرار و HTTPS، DNS، RX/TX و Disconnect را بررسی کنید.
+3. Settings → به‌روزرسانی: کانال پایدار باید «نسخهٔ جدیدتری وجود ندارد» نشان دهد.
+4. پیش‌انتشار را روشن و بررسی دستی را تکرار کنید؛ نسخهٔ مساوی/قدیمی نباید update اعلام شود.
+5. بررسی دوره‌ای پیش‌فرض خاموش باشد؛ با روشن‌کردن آن مجوز notification به‌صورت user-controlled درخواست شود.
+6. background check نباید APK دانلود کند، installer باز کند یا VPN را وصل/قطع کند.
+7. برای آزمون download/install واقعی باید یک pre-release code بالاتر و هم‌امضای diagnostic منتشر شود؛
+   APK ناسازگار از نظر hash/package/version/ABI/signature باید حذف و با پیام localized رد شود.
+8. توقف/failover قبلی و عدم retry loop را نیز regression کنید؛ هیچ logcat یا دادهٔ profile لازم نیست.
 
 ## build محلی کم‌حافظه
 
@@ -189,12 +186,12 @@ export SING_BOX_CHECK=/home/user/.cache/sing-box-1.14.0/sing-box
   GitHub برای APK دقیقاً `93dd2b7895a13b0262015262032ac0b9300d8251ebaba513ed7bd9190513d3e4` است.
 - آلفا ۸ با versionCode 13 updater بدون token، manual + periodic opt-in، stable/pre-release،
   notification، download دستی و verification کامل قبل از Android installer را اضافه می‌کند.
-- فایل workflow production آماده است، اما push آن scope `workflow` می‌خواهد. دو refresh
-  یک‌بارمصرف پس از تأیید کاربر هنگام دریافت پاسخ GitHub با network reset شکست خوردند؛
-  login تازه با scope workflow باید پس از آماده‌شدن commit امتحان شود.
-- build آلفا ۸ هنوز اجرا نشده است: AAR پین‌شدهٔ cache محیط پاک شده و build باید در GitHub
-  Actions با ساخت رسمی libbox انجام شود یا toolchain/AAR دقیق محلی بازگردانده شود.
-- کلید Production هنوز باید خارج از chat ساخته و پنج GitHub Secret مستندشده تنظیم شود.
+- workflow با OAuth scope صحیح push شد و run نهایی سبز است؛ buildهای عادی read-only هستند
+  و job انتشار tag به `contents: write` محدود می‌شود و فقط `GITHUB_TOKEN` موقت می‌گیرد.
+- libbox رسمی دقیق پس از build و verify در GitHub Actions cache شد؛ buildهای بعدی checksum
+  را دوباره کنترل می‌کنند و AAR هرگز در repository/release source قرار نمی‌گیرد.
+- کلید Production هنوز باید خارج از chat ساخته و پنج GitHub Secret مستندشده طبق
+  `docs/RELEASE.md` تنظیم شود؛ debug alpha8 نباید production معرفی شود.
 
 ## قواعد ثابت
 

@@ -262,7 +262,10 @@ separate `contents: write` job publish with the ephemeral `GITHUB_TOKEN`.
 The AAR is built from sing-box v1.14.0 at exact commit
 `0b8995879f29a9b98ee027bc17b75e101445b238`. The build script creates ARM64 and
 ARMv7 sequentially; the verifier checks checksum, ABI allowlist and generated API
-classes. App packaging emits one APK per ABI to control size. Representative complete
+classes. `:core:engine` uses the AAR only on its compile classpath and the application
+packages that exact verified AAR directly; this avoids unsupported nested local-AAR
+bundling in AGP while preserving the typed boundary. App packaging emits one APK per
+ABI to control size. Representative complete
 configs for all 11 protocol families, including the 1.14 WireGuard `endpoints`
 schema, pass `sing-box check` using the exact pinned Linux CLI. This checks schema,
 not Android native loading or real connectivity. Every core update still requires
