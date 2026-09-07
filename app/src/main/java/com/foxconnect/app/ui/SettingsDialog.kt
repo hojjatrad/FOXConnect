@@ -34,8 +34,8 @@ internal data class ProductSettings(
     val returnToPreferred: Boolean = false,
     val killSwitchEnabled: Boolean = true,
     val cooldownSeconds: Int = 60,
-    val periodicUpdateChecks: Boolean = false,
-    val includePrereleases: Boolean = false,
+    val periodicUpdateChecks: Boolean = true,
+    val includePrereleases: Boolean = BuildConfig.UPDATE_ASSET_CHANNEL == "debug",
 )
 
 @Composable

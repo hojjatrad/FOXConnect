@@ -4,11 +4,14 @@
 
 ## وضعیت فعال
 
-نسخهٔ فعال: **`0.4.9-phase4-alpha10-data-path`**، `versionCode=15`.
-PR #1 در commit اصلی `847db5b2a35f242827c5e514259cbaed1c1da968` merge شد. GitHub Actions
-run `34098938303` با checker بومی اجباری، ۹۶ متد تست JVM، lint و هر دو split تشخیصی
-موفق شد. APK ARM64 با certificate تشخیصی ثابت دوباره امضا و در pre-release
-`diagnostic-v0.4.9-alpha10` منتشر شده است؛ پذیرش فیزیکی هنوز انجام نشده است.
+نسخهٔ در حال توسعه: **`0.5.0-phase4-alpha11-auto-update`**، `versionCode=16`.
+درخواست فعال این است که برنامه انتشار جدید GitHub را خودش اعلام کند و با دکمهٔ کاربر
+APK را امن دانلود/تأیید و نصب‌کنندهٔ Android را باز کند. تغییرهای updater در worktree
+هستند و CI/release هنوز انجام نشده است.
+
+آلفا ۱۰ در commit `847db5b2a35f242827c5e514259cbaed1c1da968` و run `34098938303`
+CI را پاس و در `diagnostic-v0.4.9-alpha10` منتشر شد؛ پذیرش فیزیکی data path هنوز انجام
+نشده و آلفا ۱۱ engine آن را تغییر نمی‌دهد.
 
 Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI موفق بود، اما در
 آزمون فیزیکی همان دستگاه/شبکه شکست خورد: UI وضعیت `Connected` داشت، endpoint pingها
@@ -18,6 +21,21 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 بررسی history ثابت کرد ادعای قبلی مستندات دربارهٔ اصلاح route در آلفا ۷ نادرست بوده است:
 `route.auto_detect_interface=false` از commit اولیه تا APK آلفا ۹ باقی مانده بود. بنابراین
 گزارش قدیمی «تأیید ترافیک واقعی آلفا ۷» نباید مبنای پذیرش قرار گیرد.
+
+## تغییرهای updater آلفا ۱۱ (در انتظار CI)
+
+- policy revision یک‌باره بررسی دوره‌ای را برای نصب‌های موجود فعال می‌کند؛ بعد از migration
+  opt-out کاربر حفظ می‌شود.
+- default بررسی خودکار روشن است؛ first delay برابر ۱۵ دقیقه و دوره ۲۴ ساعت با flex شش
+  ساعت و NetworkType.CONNECTED است. خطای شبکه با exponential backoff پانزده‌دقیقه‌ای retry می‌شود.
+- debug channel به‌صورت پیش‌فرض pre-release را می‌بیند؛ release channel stable باقی می‌ماند
+  و انتخاب صریح کاربر در revisionهای بعدی حفظ می‌شود.
+- worker فقط metadata عمومی repo ثابت را می‌خواند. APK در background دانلود/نصب نمی‌شود.
+- notification دارای action «مشاهده و نصب» است. version فقط پس از post موفق notification
+  به‌عنوان notified ثبت می‌شود تا نبود permission اعلان را برای همیشه از بین نبرد.
+- یک لمس کاربر downloadAndVerify را اجرا و پس از size/hash/package/version/ABI/certificate
+  verification، installer سیستم را باز می‌کند؛ تأیید نهایی Android اجباری است.
+- پنج تست policy جدید اضافه شده‌اند؛ کل suite اکنون ۱۰۱ متد `@Test` دارد.
 
 ## یافته‌های قطعی تعمیر آلفا ۱۰
 
