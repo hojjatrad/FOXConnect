@@ -114,7 +114,7 @@ import می‌شود و هر ۱۷ profile در repository باقی می‌مان
 
 ## APK آلفا ۸
 
-- مسیر موقت تا انتشار: `/home/user/FOXConnect-artifacts/FOXConnect-v13-debug-arm64-v8a.apk`
+- انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.7-alpha8`
 - نسخه: `0.4.7-phase4-alpha8-updater (13)`
 - package: `com.foxconnect.app.debug`
 - ABI: فقط `arm64-v8a`
@@ -124,8 +124,8 @@ import می‌شود و هر ۱۷ profile در repository باقی می‌مان
 - ZIP/native alignment: 16 KiB؛ libbox LOAD alignment: `0x4000`
 
 metadata همراه: `FOXConnect-v13-debug-arm64-v8a.apk.sha256`، `SHA256SUMS` و
-`VERIFICATION.txt`. پس از تأیید assetهای GitHub Release، APKهای محلی و archive قدیمی
-پاک می‌شوند؛ AAR، cache و build outputs داخل Git نیستند.
+`VERIFICATION.txt`. digest عمومی GitHub و checksum companion تأیید شدند؛ APKهای محلی،
+archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شوند.
 
 ## اعتبارسنجی سبز
 
@@ -184,6 +184,8 @@ export SING_BOX_CHECK=/home/user/.cache/sing-box-1.14.0/sing-box
 - Pre-release عمومی آلفا ۷ در `https://github.com/hojjatrad/FOXConnect/releases/tag/v0.4.6-alpha7`
   شامل APK تأییدشده، checksum companion، SHA256SUMS و VERIFICATION است؛ digest منتشرشدهٔ
   GitHub برای APK دقیقاً `93dd2b7895a13b0262015262032ac0b9300d8251ebaba513ed7bd9190513d3e4` است.
+- Pre-release عمومی آلفا ۸ در `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.4.7-alpha8`
+  با digest دقیق `c5d45705025120533d2c955698e7c0f0c52f9f983d0fbc01bdbc42f2a3b40a34` تأیید شد.
 - آلفا ۸ با versionCode 13 updater بدون token، manual + periodic opt-in، stable/pre-release،
   notification، download دستی و verification کامل قبل از Android installer را اضافه می‌کند.
 - workflow با OAuth scope صحیح push شد و run نهایی سبز است؛ buildهای عادی read-only هستند
