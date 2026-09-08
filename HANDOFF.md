@@ -4,30 +4,30 @@
 
 ## وضعیت فعال
 
-نسخهٔ در حال توسعه: **`0.5.1-phase4-alpha12-panel-import-control`**، `versionCode=17`،
-روی branch **`feature/alpha12-panel-import-control`** و base
-`ffe5d4a0979bc613825784fc42c47e23e3259cc3` است. feature در commit `fe0cd6c` و اصلاح
-حافظهٔ packaging CI در `01c1b2e` روی PR #4 قرار دارند. run نخست `34196691852` بعد از
+نسخهٔ منتشرشده: **`0.5.1-phase4-alpha12-panel-import-control`**، `versionCode=17`، روی
+`main` و tag **`diagnostic-v0.5.1-alpha12`** است. feature بر پایه
+`ffe5d4a0979bc613825784fc42c47e23e3259cc3` در commit `fe0cd6c` و اصلاح حافظهٔ
+packaging CI در `01c1b2e` روی PR #4 قرار گرفتند. run نخست `34196691852` بعد از
 موفقیت همهٔ test/checker/lint فقط با OOM در `ApkFlinger` شکست خورد؛ heap فقط برای
-assemble diagnostic/release افزایش یافت و run اصلاحی `34198554965` کاملاً سبز شد.
-آلفا ۱۲ هنوز merge یا منتشر نشده است. این نسخه import یک‌بارهٔ احراز هویت‌شدهٔ Marzban،
-PasarGuard و Hiddify، حالت واقعی `Disconnecting` و کنترل اتصال لایه‌ای بدون gradient را
-اضافه می‌کند.
+assemble diagnostic/release افزایش یافت. run نهایی PR `34199330025`، merge commit
+`8f54dbd5d401e91a184b7b5dd885212db72ef7be`، run اصلی `34199993755` و workflow انتشار
+`34204205302` همگی سبز شدند. آلفا ۱۲ در `diagnostic-v0.5.1-alpha12` عمومی است. این نسخه
+import یک‌بارهٔ احراز هویت‌شدهٔ Marzban، PasarGuard و Hiddify، حالت واقعی
+`Disconnecting` و کنترل اتصال لایه‌ای بدون gradient را اضافه می‌کند.
 
 اعتبارسنجی نهایی محلی موفق شد: ۲۳ تست app، ۴۳ تست engine با checker واقعی sing-box
 1.14.0، ۳۲ تست parser و ۱۳ تست storage، در مجموع ۱۱۱ تست بدون failure/error/skip.
-`:app:lintDebug` نیز در اجرای جداگانه کامل و موفق شد. هر دو split debug محلی assemble
-شدند، اما چون فقط برای compile از AAR بازسازی‌شده استفاده شد، APKهای محلی release artifact
-نیستند و پاک می‌شوند. build/release معتبر باید فقط با AAR واقعی checksum-pinned در
-GitHub Actions انجام شود.
+`:app:lintDebug` نیز در اجرای جداگانه کامل و موفق شد. splitهای محلی که فقط با AAR
+بازسازی‌شده compile شده بودند release artifact محسوب نشدند و پاک شدند. build رسمی main
+با AAR واقعی checksum-pinned ساخته و در workflow مستقل دوباره بررسی شد.
 
 همهٔ APK/ZIP/AAR محلی، خروجی‌های build، cache/toolchain موقت و پوشه‌های تحقیق پاک شده‌اند؛
-حجم workspace حدود ۳٫۷ MiB است. APK و metadata آلفا ۱۱ فقط در GitHub Release عمومی
-نگه‌داری می‌شوند. کلید خصوصی diagnostic تنها استثنا است و هرگز نباید به GitHub، source،
-artifact یا log منتقل شود.
+حجم workspace پس از cleanup حدود ۳٫۷ MiB است. APK و metadata آلفا ۱۲ و نسخه‌های قبلی فقط
+در GitHub Releases عمومی نگه‌داری می‌شوند. کلید خصوصی diagnostic تنها استثنا است و هرگز
+نباید به GitHub، source، artifact یا log منتقل شود.
 
-آلفا ۱۱ در commit پایهٔ فعلی منتشر شده است و updater خودکار GitHub را دارد. آزمون واقعی
-panel import، updater و data path روی دستگاه هنوز انجام نشده است. آلفا ۱۰ در commit
+آلفا ۱۲ جدیدترین release است و updater خودکار GitHub را از آلفا ۱۱ به ارث می‌برد. آزمون
+واقعی panel import، updater و data path روی دستگاه هنوز انجام نشده است. آلفا ۱۰ در commit
 `847db5b2a35f242827c5e514259cbaed1c1da968` و run `34098938303` CI را پاس و در
 `diagnostic-v0.4.9-alpha10` منتشر شد؛ پذیرش فیزیکی data path هنوز انجام نشده است.
 
@@ -40,7 +40,7 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 `route.auto_detect_interface=false` از commit اولیه تا APK آلفا ۹ باقی مانده بود. بنابراین
 گزارش قدیمی «تأیید ترافیک واقعی آلفا ۷» نباید مبنای پذیرش قرار گیرد.
 
-## تغییرهای آلفا ۱۲ (پیاده‌سازی و PR CI سبز؛ merge/انتشار/دستگاه در انتظار)
+## تغییرهای آلفا ۱۲ (CI و انتشار سبز؛ پذیرش دستگاه در انتظار)
 
 - `PanelImportClient` فقط HTTPS، TLS پیش‌فرض معتبر، بدون redirect/userinfo/fragment، با
   timeout و سقف body/user/config/total را می‌پذیرد؛ خطاها بدون URL/token/raw payload
@@ -61,18 +61,15 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
   اتصال، ripple محدود متصل، motion قطع و shake شکست؛ هیچ asset/code/branding کپی نشده است.
 - دریافت APK رسمی Connectix 2.7.3 همچنان شکست خورده؛ تحلیل باینری یا استنتاج API ادعا نشود.
 
-## کارهای بعدی الزامی آلفا ۱۲
+## کارهای باقی‌ماندهٔ الزامی آلفا ۱۲
 
-1. commit مستندات نهایی را push کنید؛ پس از سبزی CI docs-only، PR #4 را merge و run اجباری
-   main را با AAR واقعی checksum-pinned تا پایان سبز کنترل کنید.
-2. diagnostic ARM64 را با همان هویت diagnostic پایدار stage/verify و به‌صورت prerelease
-   منتشر کنید؛ package/version/ABI/hash/signature/16KiB alignment و secret scan باید gate
-   شوند. لینک مستقیم APK/checksum عمومی و anonymous updater را تأیید کنید.
-3. هیچ APK/ZIP/AAR/cache/build محلی پس از upload باقی نگذارید؛ کلید امضا هرگز upload نشود.
-4. روی دستگاه واقعی هر سه نوع panel، حالت Hiddify personal/admin و خطا/partial/cancel را
+1. روی دستگاه واقعی هر سه نوع panel، حالت Hiddify personal/admin و خطا/partial/cancel را
    تست کنید؛ credential/raw config نباید در log/backup/recents دیده شود.
-5. پذیرش data path آلفا ۱۰ به بعد همچنان لازم است: browser/app، DNS، upload/download،
-   RX/TX، IP خروجی، چند failover، Kill Switch و updater/install با اقدام صریح کاربر.
+2. پذیرش data path آلفا ۱۰ به بعد همچنان لازم است: browser/app، DNS، upload/download،
+   RX/TX، IP خروجی، چند failover و Kill Switch.
+3. updater code 16 باید alpha12 را بدون token کشف کند؛ notification، اقدام صریح کاربر،
+   hash/package/version/ABI/certificate verification و Android installer روی دستگاه تست شوند.
+4. هیچ APK/ZIP/AAR/cache/build محلی پس از upload نگه داشته نشود؛ کلید امضا هرگز upload نشود.
 
 ## تغییرهای updater آلفا ۱۱ (CI سبز؛ منتشرشده، در انتظار دستگاه)
 
@@ -241,6 +238,31 @@ import می‌شود و هر ۱۷ profile در repository باقی می‌مان
 - تست‌های policy/lifecycle برای ranking، freshness، جداسازی metric، hysteresis، cooldown،
   چهار تلاش و recovery مجاز اضافه شده‌اند و همراه کل suite و lint در CI پاس شدند.
 
+## APK آلفا ۱۲
+
+- انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.1-alpha12`
+- دانلود مستقیم: `https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.1-alpha12/FOXConnect-v17-debug-arm64-v8a.apk`
+- checksum مستقیم: `https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.1-alpha12/FOXConnect-v17-debug-arm64-v8a.apk.sha256`
+- نسخه: `0.5.1-phase4-alpha12-panel-import-control (17)`
+- package: `com.foxconnect.app.debug`
+- ABI: فقط `arm64-v8a`
+- اندازه: `46,833,239` bytes
+- SHA-256: `8452b87a2fff43685e00b098546231554e01c6e64809831bb1fda472a1bdaf2c`
+- certificate SHA-256: `ffee4a25472705834a1fdb680fbae4ffce31e02d472fa7897765b767c307b709`
+- امضا: فقط APK Signature Scheme v2
+- ZIP/native alignment: 16 KiB؛ همهٔ libbox ELF LOAD alignmentها: `0x4000`
+- merge/tag target: `8f54dbd5d401e91a184b7b5dd885212db72ef7be`
+- PR: `https://github.com/hojjatrad/FOXConnect/pull/4`
+- PR CI نهایی: `https://github.com/hojjatrad/FOXConnect/actions/runs/34199330025`
+- main CI: `https://github.com/hojjatrad/FOXConnect/actions/runs/34199993755`
+- publish verification: `https://github.com/hojjatrad/FOXConnect/actions/runs/34204205302`
+- artifact رسمی: `10045855449`؛ digest archive برابر
+  `1bdde787e96f924387d6e20fa768ad0250f2587955e0bd2f120cd693361e1671`
+- ARM64 ابری پیش از re-sign: `75a46a228e4ae38b42aa8d25b832f4e99f2615e32ddda7c6d21e5941bd9f45a8`
+
+API عمومی release، فهرست feed ده‌تایی مورد استفادهٔ updater، checksum، metadata و دانلود
+کامل APK بدون token تأیید شدند. این build تا پذیرش فیزیکی diagnostic است.
+
 ## APK آلفا ۱۱
 
 - انتشار عمومی: `https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.0-alpha11`
@@ -318,8 +340,10 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
   failure/error/skip؛ engine checker واقعی sing-box 1.14.0 را اجرا کرد. `:app:lintDebug`
   و assemble هر دو split debug محلی موفق شدند. در GitHub، run `34196691852` تمام
   test/checker/lint را پاس کرد ولی packaging با heap 640 MiB OOM شد؛ پس از محدودکردن
-  heap 1536 MiB به assemble diagnostic/release، run `34198554965` با AAR واقعی، test،
-  checker، lint، packaging هر دو split و artifact upload کاملاً سبز شد. انتشار هنوز نیست.
+  heap 1536 MiB به assemble diagnostic/release، runهای PR `34198554965` و
+  `34199330025` و main `34199993755` با AAR واقعی، test، checker، lint، packaging هر دو
+  split و artifact upload سبز شدند. workflow انتشار `34204205302` نیز tag/assets/APK/
+  hash/package/version/ABI/certificate/alignment را دوباره تأیید و release را عمومی کرد.
 - PR #2 با run `34108267225` و main با run `34108620356` برای آلفا ۱۱ موفق؛ checker
   دقیق 1.14.0، ۱۰۱ متد تست JVM، lint و هر دو split diagnostic سبز
 - APK نهایی آلفا ۱۱: package/version/ABI، certificate ثابت، v2، zipalign 16 KiB، همهٔ

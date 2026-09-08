@@ -1,12 +1,12 @@
 # FOXConnect
 
-> وضعیت: **فاز ۴ آلفا ۱۲ تشخیصی؛ import امن پنل و کنترل اتصال جدید در حال اعتبارسنجی**
+> وضعیت: **فاز ۴ آلفا ۱۲ تشخیصی؛ CI سبز و APK عمومی، در انتظار پذیرش فیزیکی**
 > آلفا ۹ در آزمون دستگاه شکست خورد. آلفا ۱۰ route/protect و شرط‌های ضد Connected کاذب را
-> اصلاح کرد و CI را پاس کرد، اما data path آن هنوز روی همان دستگاه/شبکه پذیرش فیزیکی نشده است.
-> آلفا ۱۱ updater خودکار GitHub را اضافه کرد. آلفا ۱۲ import یک‌بارهٔ احراز هویت‌شده از
-> Marzban/PasarGuard/Hiddify و یک کنترل اتصال لایه‌ای و state-driven را اضافه می‌کند.
-> این نسخه تا CI اجباری، انتشار APK و آزمون واقعی پنل/updater به‌علاوهٔ
-> browser/app/DNS/upload/download و چند failover، production نیست.
+> اصلاح کرد، اما data path آن هنوز روی همان دستگاه/شبکه پذیرش فیزیکی نشده است. آلفا ۱۱
+> updater خودکار GitHub را افزود. آلفا ۱۲ import یک‌بارهٔ احراز هویت‌شده از
+> Marzban/PasarGuard/Hiddify و کنترل اتصال لایه‌ای و state-driven را اضافه کرد و PR/main/
+> publish CI را پاس کرد. تا آزمون واقعی پنل/updater و browser/app/DNS/upload/download و
+> چند failover، این نسخه diagnostic است و production محسوب نمی‌شود.
 
 FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات و telemetry است. رابط فارسی
 به‌صورت پیش‌فرض و RTL است و ترجمهٔ انگلیسی LTR نیز دارد. شناسهٔ موقت release
@@ -206,7 +206,7 @@ backup/device transfer سیستم برای همهٔ داده‌های اپ غی�
 ## محدودیت‌های فعلی
 
 - آلفا ۹ روی دستگاه با Connected کاذب و نبود کامل ترافیک شکست خورد؛ آلفا ۱۰ CI را پاس کرده اما تا آزمون همان دستگاه تأیید فیزیکی نشده است.
-- APK تشخیصی ARM64: [آلفا ۱۱](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.0-alpha11)؛ [دانلود مستقیم](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.0-alpha11/FOXConnect-v16-debug-arm64-v8a.apk)، SHA-256: `83a154c8c3fdfafc4b6cdbaaa9838679ff96d93feb4d1786722cd6c0dd95bfec`. آلفاهای ۹ و ۱۰ فقط سابقهٔ مسیر تشخیصی‌اند و data path هنوز پذیرش فیزیکی نشده است.
+- APK تشخیصی ARM64: [آلفا ۱۲](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.1-alpha12)؛ [دانلود مستقیم](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.1-alpha12/FOXConnect-v17-debug-arm64-v8a.apk)، SHA-256: `8452b87a2fff43685e00b098546231554e01c6e64809831bb1fda472a1bdaf2c`. آلفاهای قبلی فقط سابقهٔ مسیر تشخیصی‌اند و data path هنوز پذیرش فیزیکی نشده است.
 - build تشخیصی debug-signed است، نه release-signed؛ مهاجرت یک‌باره به `com.foxconnect.app` با backup رمز‌شده، نصب جدا و restore لازم است.
 - فرم ساختاریافتهٔ دستی فعلاً فقط برای VLESS است؛ بقیه از لینک یا فایل WireGuard import می‌شوند.
 - پذیرفته‌شدن JSON نمونه توسط CLI پین‌شده جای تست libbox بومی Android و سرور واقعی را نمی‌گیرد.
@@ -265,17 +265,20 @@ subscription URLs, and every retrieved payload still passes through
 `UniversalConfigImporter`. Home now has an original,
 solid-color layered control with press/release depth and haptics, connecting ticks,
 connected ripples, a truthful Disconnecting state, and failure motion driven only by
-the tunnel state.
+the tunnel state. Alpha 12 passed pull-request and main CI with 111 tests, the mandatory
+native checker, lint, genuine pinned libbox packaging, and the independent diagnostic
+release-verification workflow. Its public ARM64 prerelease remains subject to physical
+panel, updater, and VPN data-path acceptance.
 
 CI now downloads the official sing-box 1.14.0 Linux checker with a pinned SHA-256 and
 revision, and the generated-config schema test fails instead of skipping when the exact
 checker is unavailable. Production release publishing still uses only GitHub Secrets and
 the workflow's ephemeral `GITHUB_TOKEN`; no PAT is embedded.
 
-Alpha 11 passed both mandatory GitHub CI runs—including the exact native checker, 101 JVM
-test methods, lint, and both diagnostic splits—and is available as an
-[ARM64 diagnostic pre-release](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.0-alpha11)
-with [direct APK download](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.0-alpha11/FOXConnect-v16-debug-arm64-v8a.apk).
+Alpha 12 passed mandatory pull-request and main GitHub CI—including the exact native
+checker, 111 JVM test methods, lint, and both diagnostic splits—and is available as an
+[ARM64 diagnostic pre-release](https://github.com/hojjatrad/FOXConnect/releases/tag/diagnostic-v0.5.1-alpha12)
+with [direct APK download](https://github.com/hojjatrad/FOXConnect/releases/download/diagnostic-v0.5.1-alpha12/FOXConnect-v17-debug-arm64-v8a.apk).
 It remains **diagnostic, not production**, until the updater and inherited alpha10 data path
 are tested on-device: browser/app traffic, DNS, upload, download, displayed active profile,
 several forced failovers, no-leak behavior, and sustained operation. See [HANDOFF.md](HANDOFF.md).

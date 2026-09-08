@@ -25,6 +25,10 @@
   redaction نوع‌های حساس و هویت runtime هنگام قطع؛ `versionCode` به 17 ارتقا یافت.
 - افزایش heap فقط برای مرحله‌های packaging diagnostic/release در GitHub Actions؛ run نخست
   پس از test/checker/lint با OOM در zipflinger شکست خورد و run اصلاحی PR کاملاً سبز شد.
+- PR #4، run نهایی PR `34199330025`، run شاخهٔ main `34199993755` و workflow مستقل
+  انتشار `34204205302` سبز شدند؛ pre-release عمومی `diagnostic-v0.5.1-alpha12` با APK
+  ARM64 code 17 و SHA-256 برابر `8452b87a2fff43685e00b098546231554e01c6e64809831bb1fda472a1bdaf2c`
+  منتشر و دانلود/checksum آن بدون token تأیید شد.
 - دریافت APK Connectix 2.7.3 از URL رسمی همچنان در TLS/connect timeout شکست خورد؛ هیچ
   تحلیل باینری ادعا نمی‌شود و هیچ API از marketing یا حدس وارد پیاده‌سازی نشده است.
 
