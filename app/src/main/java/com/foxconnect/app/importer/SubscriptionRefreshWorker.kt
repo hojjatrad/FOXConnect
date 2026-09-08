@@ -74,7 +74,10 @@ class SubscriptionRefreshWorker(
     }
 
     private fun ConnectionState.isTunnelActive(): Boolean =
-        this is ConnectionState.Connected || this is ConnectionState.Connecting || this is ConnectionState.Switching
+        this is ConnectionState.Connected ||
+            this is ConnectionState.Connecting ||
+            this is ConnectionState.Switching ||
+            this is ConnectionState.Disconnecting
 
     private fun String.isTransientFailure(): Boolean =
         this == "subscription_network_error" ||

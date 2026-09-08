@@ -9,6 +9,7 @@ enum class ProfileSource {
     FILE,
     QR,
     SUBSCRIPTION,
+    PANEL,
     MANUAL,
 }
 

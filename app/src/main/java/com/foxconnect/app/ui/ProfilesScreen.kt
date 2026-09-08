@@ -58,6 +58,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.foxconnect.app.R
+import com.foxconnect.app.importer.PanelImportRequest
+import com.foxconnect.app.importer.PanelProvider
 import com.foxconnect.core.engine.ProfileHealthMetric
 import com.foxconnect.core.model.ManagedProfile
 import com.foxconnect.core.model.ProtocolType
@@ -74,6 +76,7 @@ fun ProfilesScreen(
     state: ProfileRepositoryState,
     healthMetrics: Map<String, ProfileHealthMetric>,
     pingRunning: Boolean,
+    panelImportRunning: Boolean,
     failoverEnabled: Boolean,
     onBack: () -> Unit,
     onPingAll: () -> Unit,
@@ -84,6 +87,7 @@ fun ProfilesScreen(
     onQr: () -> Unit,
     onManual: () -> Unit,
     onSubscription: () -> Unit,
+    onPanelImport: () -> Unit,
     onExportBackup: () -> Unit,
     onRestoreBackup: () -> Unit,
     onEdit: (ManagedProfile) -> Unit,
@@ -130,13 +134,15 @@ fun ProfilesScreen(
         ) {
             item {
                 ImportActions(
-                    onClipboard,
-                    onFile,
-                    onQr,
-                    onManual,
-                    onSubscription,
-                    onExportBackup,
-                    onRestoreBackup,
+                    onClipboard = onClipboard,
+                    onFile = onFile,
+                    onQr = onQr,
+                    onManual = onManual,
+                    onSubscription = onSubscription,
+                    onPanelImport = onPanelImport,
+                    panelImportRunning = panelImportRunning,
+                    onExportBackup = onExportBackup,
+                    onRestoreBackup = onRestoreBackup,
                 )
             }
             item {
@@ -310,6 +316,8 @@ private fun ImportActions(
     onQr: () -> Unit,
     onManual: () -> Unit,
     onSubscription: () -> Unit,
+    onPanelImport: () -> Unit,
+    panelImportRunning: Boolean,
     onExportBackup: () -> Unit,
     onRestoreBackup: () -> Unit,
 ) {
@@ -324,6 +332,24 @@ private fun ImportActions(
             ImportButton(R.string.import_qr, onQr, Modifier.weight(1f))
         }
         ImportButton(R.string.import_subscription, onSubscription, Modifier.fillMaxWidth())
+        Button(
+            onClick = onPanelImport,
+            enabled = !panelImportRunning,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            if (panelImportRunning) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.size(8.dp))
+            }
+            Text(
+                stringResource(
+                    if (panelImportRunning) R.string.panel_import_running else R.string.import_from_panel,
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Text(
             stringResource(R.string.backup_title),
             color = MutedColor,
@@ -628,6 +654,168 @@ private fun ToggleRow(label: Int, checked: Boolean, onCheckedChange: (Boolean) -
 private fun parseVless(raw: String): VlessProfile? = when (val result = VlessUriParser.parse(raw)) {
     is ParseResult.Success -> result.value
     is ParseResult.Error -> null
+}
+
+@Composable
+fun PanelImportDialog(
+    onDismiss: () -> Unit,
+    onImport: (PanelImportRequest) -> Unit,
+) {
+    var provider by remember { mutableStateOf(PanelProvider.MARZBAN) }
+    var serverUrl by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var hiddifyClientPath by remember { mutableStateOf("") }
+    var invalid by remember { mutableStateOf(false) }
+
+    fun clearAndDismiss() {
+        serverUrl = ""
+        username = ""
+        password = ""
+        hiddifyClientPath = ""
+        onDismiss()
+    }
+
+    Dialog(onDismissRequest = ::clearAndDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().heightIn(max = 720.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = SurfaceColor,
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Text(
+                    stringResource(R.string.panel_import_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = InkColor,
+                )
+                Spacer(Modifier.height(12.dp))
+                Column(
+                    Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(stringResource(R.string.panel_provider), color = MutedColor)
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        PanelProvider.entries.forEach { item ->
+                            FilterChip(
+                                selected = provider == item,
+                                onClick = { provider = item; invalid = false },
+                                label = {
+                                    Text(
+                                        stringResource(
+                                            when (item) {
+                                                PanelProvider.MARZBAN -> R.string.panel_provider_marzban
+                                                PanelProvider.PASARGUARD -> R.string.panel_provider_pasarguard
+                                                PanelProvider.HIDDIFY -> R.string.panel_provider_hiddify
+                                            },
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    OutlinedTextField(
+                        value = serverUrl,
+                        onValueChange = { serverUrl = it.take(2_048); invalid = false },
+                        label = { Text(stringResource(R.string.panel_server_url)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        singleLine = true,
+                        isError = invalid,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = { username = it.take(256); invalid = false },
+                        label = { Text(stringResource(R.string.panel_username)) },
+                        singleLine = true,
+                        isError = invalid,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it.take(1_024); invalid = false },
+                        label = { Text(stringResource(R.string.panel_password)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true,
+                        isError = invalid,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (provider == PanelProvider.HIDDIFY) {
+                        OutlinedTextField(
+                            value = hiddifyClientPath,
+                            onValueChange = {
+                                hiddifyClientPath = it.filter { char ->
+                                    char.isLetterOrDigit() || char in "._-~"
+                                }.take(128)
+                                invalid = false
+                            },
+                            label = { Text(stringResource(R.string.hiddify_client_path)) },
+                            supportingText = { Text(stringResource(R.string.hiddify_client_path_hint)) },
+                            singleLine = true,
+                            isError = invalid,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Text(
+                        stringResource(
+                            if (provider == PanelProvider.HIDDIFY) {
+                                R.string.hiddify_import_hint
+                            } else {
+                                R.string.oauth_panel_import_hint
+                            },
+                        ),
+                        color = MutedColor,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        stringResource(R.string.panel_credentials_ephemeral),
+                        color = ConnectedColor,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        stringResource(R.string.panel_import_limit_note),
+                        color = MutedColor,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    if (invalid) {
+                        Text(stringResource(R.string.panel_form_invalid), color = ErrorColor)
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = ::clearAndDismiss) { Text(stringResource(R.string.cancel)) }
+                    TextButton(onClick = {
+                        val validUrl = runCatching {
+                            val uri = java.net.URI(serverUrl.trim())
+                            uri.scheme.equals("https", true) &&
+                                !uri.host.isNullOrBlank() &&
+                                uri.userInfo == null &&
+                                uri.query == null &&
+                                uri.fragment == null
+                        }.getOrDefault(false)
+                        if (!validUrl || username.isBlank() || password.isEmpty()) {
+                            invalid = true
+                        } else {
+                            val request = PanelImportRequest(
+                                provider = provider,
+                                serverUrl = serverUrl.trim(),
+                                username = username.trim(),
+                                password = password.toCharArray(),
+                                hiddifyClientPath = hiddifyClientPath.trim(),
+                            )
+                            serverUrl = ""
+                            username = ""
+                            password = ""
+                            hiddifyClientPath = ""
+                            onImport(request)
+                        }
+                    }) { Text(stringResource(R.string.panel_import_action)) }
+                }
+            }
+        }
+    }
 }
 
 @Composable

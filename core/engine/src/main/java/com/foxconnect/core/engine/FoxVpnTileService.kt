@@ -16,6 +16,7 @@ class FoxVpnTileService : TileService() {
     override fun onClick() {
         super.onClick()
         val state = TunnelRuntime.snapshot.value.state
+        if (state is ConnectionState.Disconnecting) return
         if (state !is ConnectionState.Disconnected) {
             AndroidTunnelController(this).disconnect()
             qsTile?.state = Tile.STATE_INACTIVE
@@ -47,7 +48,8 @@ class FoxVpnTileService : TileService() {
             this.state = when (state) {
                 is ConnectionState.Connected,
                 is ConnectionState.Connecting,
-                is ConnectionState.Switching -> Tile.STATE_ACTIVE
+                is ConnectionState.Switching,
+                is ConnectionState.Disconnecting -> Tile.STATE_ACTIVE
                 is ConnectionState.Failed -> Tile.STATE_UNAVAILABLE
                 ConnectionState.Disconnected -> Tile.STATE_INACTIVE
             }

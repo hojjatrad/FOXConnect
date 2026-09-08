@@ -19,7 +19,9 @@ internal object HomePresentationPolicy {
         selectedProtocol: ProtocolType?,
     ): DisplayedConnection {
         val runtimeIsAuthoritative = state is ConnectionState.Connecting ||
-            state is ConnectionState.Switching || state is ConnectionState.Connected
+            state is ConnectionState.Switching ||
+            state is ConnectionState.Connected ||
+            state is ConnectionState.Disconnecting
         if (runtimeIsAuthoritative && !runtimeName.isNullOrBlank()) {
             return DisplayedConnection(runtimeName, runtimeProtocol, isRuntimeActive = true)
         }

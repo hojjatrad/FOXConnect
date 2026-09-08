@@ -1,12 +1,12 @@
 # FOXConnect
 
-> وضعیت: **فاز ۴ آلفا ۱۱ تشخیصی؛ updater خودکار منتشرشده و در انتظار آزمون دستگاه**
+> وضعیت: **فاز ۴ آلفا ۱۲ تشخیصی؛ import امن پنل و کنترل اتصال جدید در حال اعتبارسنجی**
 > آلفا ۹ در آزمون دستگاه شکست خورد. آلفا ۱۰ route/protect و شرط‌های ضد Connected کاذب را
 > اصلاح کرد و CI را پاس کرد، اما data path آن هنوز روی همان دستگاه/شبکه پذیرش فیزیکی نشده است.
-> آلفا ۱۱ بدون تغییر engine، اعلان خودکار Releaseهای GitHub و جریان یک‌دکمه‌ای
-> دانلود/اعتبارسنجی/بازکردن نصب‌کننده را اضافه می‌کند. هر دو CI الزامی آن سبز و APK تشخیصی
-> منتشر شده است؛ این نسخه تا آزمون واقعی updater به‌علاوهٔ browser/app/DNS/upload/download
-> و چند failover، production نیست.
+> آلفا ۱۱ updater خودکار GitHub را اضافه کرد. آلفا ۱۲ import یک‌بارهٔ احراز هویت‌شده از
+> Marzban/PasarGuard/Hiddify و یک کنترل اتصال لایه‌ای و state-driven را اضافه می‌کند.
+> این نسخه تا CI اجباری، انتشار APK و آزمون واقعی پنل/updater به‌علاوهٔ
+> browser/app/DNS/upload/download و چند failover، production نیست.
 
 FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات و telemetry است. رابط فارسی
 به‌صورت پیش‌فرض و RTL است و ترجمهٔ انگلیسی LTR نیز دارد. شناسهٔ موقت release
@@ -45,6 +45,10 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
   و transportهای اصلی
 - subscription فقط با HTTPS و TLS معتبر، redirect فقط به HTTPS، سقف ۲ MiB،
   ETag، refresh دستی/خودکار ۲۴ ساعته و حذف اتمیک پروفایل‌های stale
+- import یک‌بارهٔ احراز هویت‌شده از API رسمی Marzban و PasarGuard با token و از مسیر
+  شخصی/API مدیریتی Hiddify با Basic auth؛ حداکثر ۱۰۰ کاربر، ۵۱۲ کانفیگ و ۴ MiB
+- credential و bearer در vault، WorkManager، log، crash text یا UI summary ذخیره
+  نمی‌شود؛ redirect احراز هویت مسدود و auth هرگز به subscription URL منتقل نمی‌شود
 - امکان غیرفعال‌کردن refresh خودکار برای هر subscription
 - export/restore قابل‌انتقال با AES-256-GCM، عبارت عبور PBKDF2-HMAC-SHA256
   و جایگزینی اتمیک vault فقط پس از احراز اصالت کامل backup
@@ -89,6 +93,9 @@ FOXConnect یک کلاینت VPN اندروید بدون روت، تبلیغات
 - Kill Switch داخلی پیش‌فرض فعال با TUN مسدودکننده هنگام تعویض و فاصلهٔ بازیابی؛ فقط پس از probe واقعی وضعیت Connected منتشر می‌شود
 - مقدار latency ناشناخته ساخته نمی‌شود؛ سوییچ بدون فاصلهٔ مطلق تضمین نمی‌شود
 - صفحهٔ تنظیمات، گزارش رویداد کد-محور بدون endpoint/credential، اعلان live و QS tile
+- کنترل اصلی اتصال با طراحی مستقل Compose، لایه‌های عمق solid-color بدون gradient،
+  فشردن/رهاکردن همراه haptic، tick/arc هنگام Connecting، ripple محدود هنگام Connected،
+  حالت واقعی Disconnecting و shake خطا؛ همهٔ motionها فقط از state واقعی تونل می‌آیند
 
 ## Build
 
@@ -248,6 +255,17 @@ button opens the verified update flow; one user action downloads the APK, valida
 repository URL, size, SHA-256, package, newer version, ABI, and signing certificate, then
 opens Android's package installer for final user approval. Users can disable periodic
 checks or pre-releases in Settings.
+
+Alpha 12 adds bounded, one-shot authenticated panel import. Marzban and PasarGuard use
+their token and user-list APIs; Hiddify uses a personal Basic-auth path or its hidden
+admin/client paths. Supplying the Hiddify client path explicitly selects admin mode,
+and the credential dialog blocks screenshots while open. Credentials remain ephemeral,
+authenticated redirects are blocked, authentication headers are never forwarded to
+subscription URLs, and every retrieved payload still passes through
+`UniversalConfigImporter`. Home now has an original,
+solid-color layered control with press/release depth and haptics, connecting ticks,
+connected ripples, a truthful Disconnecting state, and failure motion driven only by
+the tunnel state.
 
 CI now downloads the official sing-box 1.14.0 Linux checker with a pinned SHA-256 and
 revision, and the generated-config schema test fails instead of skipping when the exact

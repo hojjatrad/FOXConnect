@@ -1,5 +1,33 @@
 # تغییرات FOXConnect
 
+## 0.5.1-phase4-alpha12-panel-import-control — 2026-09-08
+
+- افزودن import یک‌بارهٔ احراز هویت‌شده از Marzban و PasarGuard با
+  `POST /api/admin/token`، Bearer token و `GET /api/users` مطابق API رسمی.
+- افزودن Hiddify از نشانی شخصی Basic-auth یا مسیر مخفی API مدیر به‌همراه مسیر مخفی
+  client؛ واردکردن client path حالت مدیر را صریح انتخاب می‌کند و credential مدیر هرگز
+  به endpoint حدسی یا مسیر subscription کاربر منتقل نمی‌شود.
+- فعال‌کردن موقت محافظ screenshot/recents اندروید هنگام نمایش فرم credential پنل.
+- اعمال HTTPS با گواهی معتبر، ممنوعیت redirect برای درخواست احراز هویت، سقف پاسخ
+  ۲ MiB، سقف مجموع ۴ MiB، ۱۰۰ کاربر و ۵۱۲ کانفیگ، cancellation و خطاهای عمومی پاک‌سازی‌شده.
+- credentialها فقط در حافظه و برای همان عملیات استفاده و `CharArray` مالک بعد از پایان
+  صفر می‌شود؛ password، bearer، URL محرمانه و raw config وارد vault metadata، WorkManager،
+  log، crash text، UI summary، APK resource یا CI نمی‌شوند.
+- تمام payloadها از parser مشترک `UniversalConfigImporter` عبور و فقط پروفایل معتبر در
+  vault رمز‌شده ذخیره می‌شود؛ credential پنل برای refresh پس‌زمینه نگهداری نمی‌شود.
+- طراحی مستقل کنترل اتصال لایه‌ای Compose با shadow/rim/face تماماً solid-color و بدون
+  gradient یا asset ثالث، عمق press/release و haptic، tick/arc اتصال، ripple محدود حالت
+  متصل و shake خطا.
+- افزودن وضعیت واقعی `Disconnecting` به مدل، bridge بین‌فرایندی، tile و UI؛ این حالت پیش
+  از فرمان teardown منتشر و فقط با گزارش VPN process به `Disconnected` تبدیل می‌شود.
+- افزودن regressionهای جریان Marzban/PasarGuard/Hiddify، import ناقص، پاک‌سازی body خطا،
+  حفظ cancellation، sanitization خطای غیرمنتظره، عدم انتقال header احراز هویت، رد HTTP،
+  redaction نوع‌های حساس و هویت runtime هنگام قطع؛ `versionCode` به 17 ارتقا یافت.
+- افزایش heap فقط برای مرحله‌های packaging diagnostic/release در GitHub Actions؛ run نخست
+  پس از test/checker/lint با OOM در zipflinger شکست خورد و run اصلاحی PR کاملاً سبز شد.
+- دریافت APK Connectix 2.7.3 از URL رسمی همچنان در TLS/connect timeout شکست خورد؛ هیچ
+  تحلیل باینری ادعا نمی‌شود و هیچ API از marketing یا حدس وارد پیاده‌سازی نشده است.
+
 ## 0.5.0-phase4-alpha11-auto-update — 2026-09-07
 
 - فعال‌شدن بررسی خودکار metadata انتشارهای مخزن رسمی GitHub به‌صورت پیش‌فرض؛ اولین

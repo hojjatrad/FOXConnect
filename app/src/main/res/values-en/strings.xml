@@ -190,4 +190,37 @@
     <string name="update_notification_title">A FOXConnect update is available</string>
     <string name="update_notification_body">%1$s (code %2$d); tap to download securely and install</string>
     <string name="update_notification_action">Review and install</string>
+
+    <string name="status_disconnecting">Disconnecting…</string>
+    <string name="import_from_panel">Import from server panel</string>
+    <string name="panel_import_running">Securely reading panel…</string>
+    <string name="panel_import_title">One-time panel import</string>
+    <string name="panel_provider">Panel type</string>
+    <string name="panel_provider_marzban">Marzban</string>
+    <string name="panel_provider_pasarguard">PasarGuard</string>
+    <string name="panel_provider_hiddify">Hiddify</string>
+    <string name="panel_server_url">Panel HTTPS address</string>
+    <string name="panel_username">Username</string>
+    <string name="panel_password">Password</string>
+    <string name="hiddify_client_path">Hiddify client proxy path (optional)</string>
+    <string name="hiddify_client_path_hint">Required for an all-users admin import; enter the path only, without /</string>
+    <string name="oauth_panel_import_hint">Enter the panel base address. FOXConnect uses the official admin-token and user-list APIs.</string>
+    <string name="hiddify_import_hint">For one account, enter its full personal Hiddify URL. For an admin import, enter the URL containing the hidden admin path and provide the hidden client path.</string>
+    <string name="panel_credentials_ephemeral">Credentials are used in memory for this fetch only. They are not stored or written to logs.</string>
+    <string name="panel_import_limit_note">Valid-certificate HTTPS only; no redirects; at most 100 users, 512 configurations, and 4 MiB of data.</string>
+    <string name="panel_form_invalid">The HTTPS address or credentials are invalid</string>
+    <string name="panel_import_action">Read and import</string>
+    <string name="panel_error_authentication">The panel did not accept the username or password</string>
+    <string name="panel_error_forbidden">This account cannot read the panel user list</string>
+    <string name="panel_error_network">The secure panel request did not complete; check the network connection</string>
+    <string name="panel_error_tls">The panel certificate is invalid or a secure HTTPS connection could not be established</string>
+    <string name="panel_error_redirect">The panel redirect was blocked to prevent credential disclosure</string>
+    <string name="panel_error_size">The panel response exceeds FOXConnect’s safe size limit</string>
+    <string name="panel_error_user_limit">The panel returned more than 100 users; use a narrower subscription link</string>
+    <string name="panel_error_contract">The panel response does not match a documented supported API</string>
+    <string name="panel_error_no_configs">The panel was read, but no supported configuration was found</string>
+    <plurals name="panel_import_partial_fetch">
+        <item quantity="one">%1$d user source did not return a usable response and was skipped</item>
+        <item quantity="other">%1$d user sources did not return usable responses and were skipped</item>
+    </plurals>
 </resources>

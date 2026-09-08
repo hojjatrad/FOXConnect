@@ -129,6 +129,7 @@ class FoxVpnService : VpnService() {
             when (request) {
                 ServiceStartRequest.DISCONNECT -> {
                     explicitStop = true
+                    runtimePublisher.disconnecting()
                     authorization.revoke()
                     connectionJob?.cancel()
                     recoveryJob?.cancel()

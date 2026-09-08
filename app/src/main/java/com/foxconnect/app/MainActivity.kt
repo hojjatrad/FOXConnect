@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.foxconnect.app.importer.PanelImportClient
+import com.foxconnect.app.importer.PanelImportFailureReason
+import com.foxconnect.app.importer.PanelImportResult
 import com.foxconnect.app.importer.SubscriptionClient
 import com.foxconnect.app.importer.SubscriptionFetchResult
 import com.foxconnect.app.importer.readAtMost
@@ -32,6 +37,7 @@ import com.foxconnect.app.ui.BackupPassphraseDialog
 import com.foxconnect.app.ui.FoxConnectTheme
 import com.foxconnect.app.ui.HomeScreen
 import com.foxconnect.app.ui.LogsScreen
+import com.foxconnect.app.ui.PanelImportDialog
 import com.foxconnect.app.ui.ProductSettings
 import com.foxconnect.app.ui.ProfilesScreen
 import com.foxconnect.app.ui.SettingsDialog
@@ -66,6 +72,8 @@ import com.foxconnect.core.model.VmessProfile
 import com.foxconnect.core.model.WireGuardProfile
 import com.foxconnect.core.parser.ConfigImportBatch
 import com.foxconnect.core.parser.ConnectableProfileParser
+import com.foxconnect.core.parser.ImportIssue
+import com.foxconnect.core.parser.ImportedConfig
 import com.foxconnect.core.parser.ParseResult
 import com.foxconnect.core.parser.UniversalConfigImporter
 import com.foxconnect.core.storage.EncryptedProfileBackup
@@ -222,6 +230,8 @@ class MainActivity : AppCompatActivity() {
                 var editorVisible by remember { mutableStateOf(false) }
                 var editorTarget by remember { mutableStateOf<ManagedProfile?>(null) }
                 var subscriptionVisible by remember { mutableStateOf(false) }
+                var panelImportVisible by remember { mutableStateOf(false) }
+                var panelImportRunning by remember { mutableStateOf(false) }
                 var settingsVisible by remember { mutableStateOf(false) }
                 var updateState by remember { mutableStateOf<UpdateUiState>(UpdateUiState.Idle) }
                 var deleteTarget by remember { mutableStateOf<ManagedProfile?>(null) }
@@ -251,6 +261,7 @@ class MainActivity : AppCompatActivity() {
                         state = repositoryState,
                         healthMetrics = healthMetrics,
                         pingRunning = pingRunning,
+                        panelImportRunning = panelImportRunning,
                         failoverEnabled = loadProductSettings().failoverEnabled,
                         onBack = { destination.value = Destination.HOME },
                         onPingAll = {
@@ -297,7 +308,8 @@ class MainActivity : AppCompatActivity() {
                             if (
                                 snapshot.state is ConnectionState.Connected ||
                                 snapshot.state is ConnectionState.Connecting ||
-                                snapshot.state is ConnectionState.Switching
+                                snapshot.state is ConnectionState.Switching ||
+                                snapshot.state is ConnectionState.Disconnecting
                             ) {
                                 toast(R.string.disconnect_before_profile_change)
                             } else {
@@ -315,6 +327,9 @@ class MainActivity : AppCompatActivity() {
                         onQr = ::startQrScan,
                         onManual = { editorTarget = null; editorVisible = true },
                         onSubscription = { subscriptionVisible = true },
+                        onPanelImport = {
+                            if (!panelImportRunning) panelImportVisible = true
+                        },
                         onExportBackup = ::startBackupExport,
                         onRestoreBackup = ::startBackupRestore,
                         onEdit = {
@@ -394,6 +409,51 @@ class MainActivity : AppCompatActivity() {
                         onSave = { name, url ->
                             subscriptionVisible = false
                             syncSubscription(name, url)
+                        },
+                    )
+                }
+                if (panelImportVisible) {
+                    DisposableEffect(Unit) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        onDispose {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
+                    }
+                    PanelImportDialog(
+                        onDismiss = { panelImportVisible = false },
+                        onImport = { request ->
+                            panelImportVisible = false
+                            panelImportRunning = true
+                            lifecycleScope.launch {
+                                var payloads: List<ByteArray> = emptyList()
+                                try {
+                                    when (val result = PanelImportClient().fetch(request)) {
+                                        is PanelImportResult.Success -> {
+                                            payloads = result.payloads
+                                            val batch = withContext(Dispatchers.Default) {
+                                                mergePanelPayloads(payloads)
+                                            }
+                                            importBatch(batch, ProfileSource.PANEL)
+                                            if (result.skippedSources > 0) {
+                                                toast(
+                                                    resources.getQuantityString(
+                                                        R.plurals.panel_import_partial_fetch,
+                                                        result.skippedSources,
+                                                        result.skippedSources,
+                                                    ),
+                                                )
+                                            }
+                                        }
+                                        is PanelImportResult.Failure -> {
+                                            toast(panelImportFailureMessage(result.reason))
+                                        }
+                                    }
+                                } finally {
+                                    payloads.forEach { it.fill(0) }
+                                    request.clear()
+                                    panelImportRunning = false
+                                }
+                            }
                         },
                     )
                 }
@@ -598,7 +658,10 @@ class MainActivity : AppCompatActivity() {
     private fun pendingBackupFile() = cacheDir.resolve("pending-profile-backup.enc")
 
     private fun ConnectionState.isTunnelActive(): Boolean =
-        this is ConnectionState.Connected || this is ConnectionState.Connecting || this is ConnectionState.Switching
+        this is ConnectionState.Connected ||
+            this is ConnectionState.Connecting ||
+            this is ConnectionState.Switching ||
+            this is ConnectionState.Disconnecting
 
     private fun startQrScan() {
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
@@ -622,6 +685,7 @@ class MainActivity : AppCompatActivity() {
         profile: ConnectableProfile?,
         candidates: List<ConnectableProfile>,
     ) {
+        if (state is ConnectionState.Disconnecting) return
         if (state is ConnectionState.Connecting || state is ConnectionState.Connected || state is ConnectionState.Switching) {
             controller.disconnect()
             return
@@ -678,6 +742,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun mergePanelPayloads(payloads: List<ByteArray>): ConfigImportBatch {
+        val configs = linkedMapOf<String, ImportedConfig>()
+        val issues = mutableListOf<ImportIssue>()
+        var duplicates = 0
+        payloads.forEach { payload ->
+            val batch = UniversalConfigImporter.importBytes(payload)
+            batch.configs.forEach configLoop@ { imported ->
+                if (configs.size >= MAX_PANEL_CONFIGS) return@configLoop
+                val key = "${imported.profile.protocol.scheme}:${imported.profile.id}"
+                if (configs.putIfAbsent(key, imported) != null) duplicates++
+            }
+            if (issues.size < MAX_PANEL_CONFIGS) {
+                issues += batch.issues.take(MAX_PANEL_CONFIGS - issues.size)
+            }
+            duplicates += batch.duplicateCount
+        }
+        return ConfigImportBatch(configs.values.toList(), issues, duplicates)
+    }
+
+    private fun panelImportFailureMessage(reason: PanelImportFailureReason): Int = when (reason) {
+        PanelImportFailureReason.INVALID_INPUT -> R.string.panel_form_invalid
+        PanelImportFailureReason.AUTHENTICATION -> R.string.panel_error_authentication
+        PanelImportFailureReason.FORBIDDEN -> R.string.panel_error_forbidden
+        PanelImportFailureReason.NETWORK -> R.string.panel_error_network
+        PanelImportFailureReason.TLS -> R.string.panel_error_tls
+        PanelImportFailureReason.REDIRECT_BLOCKED -> R.string.panel_error_redirect
+        PanelImportFailureReason.RESPONSE_TOO_LARGE -> R.string.panel_error_size
+        PanelImportFailureReason.TOO_MANY_USERS -> R.string.panel_error_user_limit
+        PanelImportFailureReason.UNSUPPORTED_RESPONSE -> R.string.panel_error_contract
+        PanelImportFailureReason.NO_SUPPORTED_CONFIGS -> R.string.panel_error_no_configs
+    }
+
     private suspend fun importBatch(batch: ConfigImportBatch, source: ProfileSource) {
         if (batch.configs.isEmpty()) {
             toast(R.string.import_failed)
@@ -707,7 +803,8 @@ class MainActivity : AppCompatActivity() {
                 updatesSelected &&
                 (tunnelState is ConnectionState.Connected ||
                     tunnelState is ConnectionState.Connecting ||
-                    tunnelState is ConnectionState.Switching)
+                    tunnelState is ConnectionState.Switching ||
+                    tunnelState is ConnectionState.Disconnecting)
             ) {
                 toast(R.string.disconnect_before_profile_change)
                 return@launch
@@ -845,6 +942,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val ACTION_SHOW_UPDATE_SETTINGS = "com.foxconnect.app.action.SHOW_UPDATE_SETTINGS"
         private const val MAX_IMPORT_BYTES = 2 * 1024 * 1024
+        private const val MAX_PANEL_CONFIGS = 512
         private const val BACKUP_MIME_TYPE = "application/vnd.foxconnect.backup"
         private const val AUTO_CONNECT_KEY = "auto_connect"
     }
