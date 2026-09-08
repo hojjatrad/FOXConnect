@@ -67,6 +67,7 @@ internal class TunnelStateStore(context: Context) {
                 output.writeUTF(
                     when (state) {
                         ConnectionState.Disconnected -> STATE_DISCONNECTED
+                        ConnectionState.Disconnecting -> STATE_DISCONNECTING
                         is ConnectionState.Connecting -> STATE_CONNECTING
                         is ConnectionState.Switching -> STATE_SWITCHING
                         is ConnectionState.Connected -> STATE_CONNECTED
@@ -100,6 +101,7 @@ internal class TunnelStateStore(context: Context) {
             val protocol = input.readNullableUtf8()?.let { ProtocolType.valueOf(it) }
             val state = when (stateCode) {
                 STATE_DISCONNECTED -> ConnectionState.Disconnected
+                STATE_DISCONNECTING -> ConnectionState.Disconnecting
                 STATE_CONNECTING -> ConnectionState.Connecting(profileName.orEmpty())
                 STATE_SWITCHING -> ConnectionState.Switching(profileName)
                 STATE_CONNECTED -> ConnectionState.Connected(profileName.orEmpty(), input.readLong())
@@ -171,6 +173,7 @@ internal class TunnelStateStore(context: Context) {
         const val MAX_STRING_BYTES = 8 * 1024
         const val MAX_STRING_CHARS = 2 * 1024
         const val STATE_DISCONNECTED = "disconnected"
+        const val STATE_DISCONNECTING = "disconnecting"
         const val STATE_CONNECTING = "connecting"
         const val STATE_SWITCHING = "switching"
         const val STATE_CONNECTED = "connected"
@@ -210,6 +213,11 @@ internal class TunnelStatePublisher(context: Context) {
 
     fun failed(userMessage: String, technicalMessage: String? = null) {
         TunnelRuntime.failed(userMessage, technicalMessage)
+        publish()
+    }
+
+    fun disconnecting() {
+        TunnelRuntime.disconnecting()
         publish()
     }
 
@@ -268,7 +276,10 @@ class TunnelRuntimeObserver(
     }
 
     private fun ConnectionState.isActiveConnection(): Boolean =
-        this is ConnectionState.Connecting || this is ConnectionState.Switching || this is ConnectionState.Connected
+        this is ConnectionState.Connecting ||
+            this is ConnectionState.Switching ||
+            this is ConnectionState.Connected ||
+            this is ConnectionState.Disconnecting
 
     private companion object {
         const val POLL_INTERVAL_MS = 500L

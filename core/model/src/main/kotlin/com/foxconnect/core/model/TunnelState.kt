@@ -2,6 +2,7 @@ package com.foxconnect.core.model
 
 sealed interface ConnectionState {
     data object Disconnected : ConnectionState
+    data object Disconnecting : ConnectionState
     data class Connecting(val profileName: String) : ConnectionState
     data class Switching(val nextProfileName: String?) : ConnectionState
     data class Connected(val profileName: String, val verifiedAtEpochMs: Long) : ConnectionState

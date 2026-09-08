@@ -1,7 +1,8 @@
-# FOXConnect architecture — phase 4 diagnostic alpha 7
+# FOXConnect architecture — phase 4 diagnostic alpha 12
 
 ```text
 WorkManager 24h ──▶ HTTPS Subscription ─────────────┐
+One-shot panel credentials ──▶ strict panel APIs ───┤
 Share / Clipboard / File / ZIP / QR / Manual Form ──┤
 Standard WireGuard INI ──────────────────────────────┤
                                                      ▼
@@ -47,8 +48,8 @@ Compose Home ──▶ AndroidTunnelController ──▶ FoxVpnService (:vpn pro
   passphrase-backup encryption and transactional profile/subscription repository.
 - `core:engine`: sing-box config, active config, VpnService/TUN, health checks,
   boot restore and runtime facts.
-- `app`: localized Compose UI, file/clipboard/share flows, in-app QR scanner and
-  strict-HTTPS subscription transport.
+- `app`: localized Compose UI, file/clipboard/share flows, in-app QR scanner,
+  strict-HTTPS subscription transport and one-shot authenticated panel adapters.
 
 The engine depends on storage/parser only for boot reconstruction of the selected
 profile. Storage never depends on the engine, so persistence remains independently
@@ -84,6 +85,20 @@ hours only while the system reports network connectivity. Transient failures use
 bounded exponential backoff; opaque internal error codes, never URLs or configs,
 are stored in the encrypted vault.
 
+Authenticated panel import is deliberately one-shot. Marzban and PasarGuard use
+their form-token and bearer-authenticated user-list APIs; Hiddify accepts its
+personal Basic-auth path or the documented hidden admin API path plus client path.
+The Hiddify client-path field explicitly selects admin mode, so admin credentials
+are sent only to that documented API and never to a speculative personal endpoint.
+Admin authentication never follows redirects and is never forwarded to a returned
+subscription URL. User lists, response bodies, user/config counts and total payload
+bytes are bounded. The credential dialog temporarily enables Android `FLAG_SECURE`.
+Passwords are held in an owning `CharArray` and overwritten after the operation;
+credentials, bearer values, Hiddify UUID URLs and raw responses are not stored in
+the vault, WorkManager, events or UI summaries. Successful payloads still pass
+through `UniversalConfigImporter` and only validated profiles enter the encrypted
+vault.
+
 ## Encrypted profile persistence
 
 `ProfileVault` contains raw credential-bearing configs, subscriptions, metadata
@@ -117,9 +132,16 @@ sanitized runtime state and a monotonic heartbeat. The UI polls it and converts 
 missing heartbeat into a truthful recovery-pending failure after seven seconds, but
 does not revoke a verified session's authorization. An uncaught UI-process failure
 records only a categorical event and does not disconnect the isolated VPN. Explicit
-disconnect, VPN permission revocation and Android Force Stop still terminate recovery.
-`Connected` is never reconstructed from stale state; every restored native tunnel must
-pass a new routed HTTPS verification.
+disconnect first publishes `Disconnecting`, then the VPN process publishes
+`Disconnected` only after teardown. VPN permission revocation and Android Force Stop
+still terminate recovery. `Connected` is never reconstructed from stale state; every
+restored native tunnel must pass a new routed HTTPS verification.
+
+The Home control is an original solid-color Compose drawing: separate shadow, lower
+rim and moving face layers provide depth without gradients or copied assets. Press and
+release change face depth and trigger haptics. Orbit ticks/arcs, connected ripples,
+disconnect motion and failure shake are selected exclusively from the real
+`ConnectionState`; animation never manufactures a protected/connected state.
 
 The JNI boundary implements the exact pinned gomobile `PlatformInterface` and
 `CommandServerHandler` types; dynamic proxies and nullable/default callback guesses

@@ -39,6 +39,21 @@ class HomePresentationPolicyTest {
     }
 
     @Test
+    fun `disconnecting keeps the truthful runtime identity until teardown finishes`() {
+        val displayed = HomePresentationPolicy.displayedConnection(
+            state = ConnectionState.Disconnecting,
+            runtimeName = "Active runtime",
+            runtimeProtocol = ProtocolType.VMESS,
+            selectedName = "Repository selection",
+            selectedProtocol = ProtocolType.VLESS,
+        )
+
+        assertEquals("Active runtime", displayed.name)
+        assertEquals(ProtocolType.VMESS, displayed.protocol)
+        assertTrue(displayed.isRuntimeActive)
+    }
+
+    @Test
     fun `disconnected state displays repository selection`() {
         val displayed = HomePresentationPolicy.displayedConnection(
             state = ConnectionState.Disconnected,

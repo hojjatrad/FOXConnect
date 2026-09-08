@@ -55,7 +55,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -75,7 +75,6 @@ import com.foxconnect.core.model.ProtocolType
 import com.foxconnect.core.model.TunnelSnapshot
 import com.foxconnect.core.model.TunnelStats
 import kotlinx.coroutines.delay
-import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.min
 
@@ -153,40 +152,54 @@ private fun ConnectionOrb(state: ConnectionState, diameter: Dp, onClick: () -> U
     val view = LocalView.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    val enabled = state !is ConnectionState.Disconnecting
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
+        targetValue = if (pressed) 0.985f else 1f,
         animationSpec = tween(
-            durationMillis = if (pressed) 90 else 180,
+            durationMillis = if (pressed) 70 else 170,
             easing = FastOutSlowInEasing,
         ),
-        label = "connection-press",
+        label = "connection-depth-scale",
     )
-    val infinite = rememberInfiniteTransition(label = "connection-motion")
-    val pulse by infinite.animateFloat(
-        initialValue = 0.82f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1_200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "idle-pulse",
+    val faceOffsetDp by animateFloatAsState(
+        targetValue = if (pressed) 3.5f else -3.5f,
+        animationSpec = tween(
+            durationMillis = if (pressed) 70 else 190,
+            easing = FastOutSlowInEasing,
+        ),
+        label = "connection-depth-travel",
     )
-    val rotation by infinite.animateFloat(
+    val motion = rememberInfiniteTransition(label = "connection-state-motion")
+    val rotation by motion.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(850, easing = LinearEasing)),
-        label = "loading-arc",
+        animationSpec = infiniteRepeatable(tween(1_050, easing = LinearEasing)),
+        label = "connection-orbit",
     )
-    val connectedFill by animateFloatAsState(
+    val rippleProgress by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1_800, easing = LinearEasing)),
+        label = "connected-ripple",
+    )
+    val connectedReveal by animateFloatAsState(
         targetValue = if (state is ConnectionState.Connected) 1f else 0f,
-        animationSpec = tween(220, easing = FastOutSlowInEasing),
-        label = "connected-fill",
+        animationSpec = tween(260, easing = FastOutSlowInEasing),
+        label = "connected-reveal",
     )
     val shake = remember { Animatable(0f) }
     LaunchedEffect(state is ConnectionState.Failed) {
         if (state is ConnectionState.Failed) {
-            listOf(-6f, 6f, -4f, 4f, 0f).forEach { target ->
-                shake.animateTo(target, tween(60, easing = LinearEasing))
+            listOf(-7f, 7f, -5f, 5f, -2f, 0f).forEach { target ->
+                shake.animateTo(target, tween(55, easing = LinearEasing))
             }
         } else {
             shake.snapTo(0f)
+        }
+    }
+    LaunchedEffect(pressed, enabled) {
+        if (pressed && enabled) {
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         }
     }
     val description = stringResource(R.string.connection_control_description)
@@ -205,6 +218,7 @@ private fun ConnectionOrb(state: ConnectionState, diameter: Dp, onClick: () -> U
                 role = Role.Button
             }
             .clickable(
+                enabled = enabled,
                 interactionSource = interaction,
                 indication = null,
                 role = Role.Button,
@@ -214,42 +228,130 @@ private fun ConnectionOrb(state: ConnectionState, diameter: Dp, onClick: () -> U
             },
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            val stroke = 3.dp.toPx()
-            val inset = stroke / 2f + 2.dp.toPx()
-            val ringSize = Size(size.width - inset * 2, size.height - inset * 2)
-            val ringTopLeft = Offset(inset, inset)
-            when (state) {
-                is ConnectionState.Disconnected -> {
-                    drawCircle(PrimaryIdleColor.copy(alpha = pulse), style = Stroke(stroke))
-                    drawPowerGlyph(PrimaryIdleColor)
-                }
-                is ConnectionState.Connecting,
-                is ConnectionState.Switching -> {
-                    drawCircle(DividerColor, style = Stroke(stroke))
-                    drawArc(
-                        color = PrimaryIdleColor,
-                        startAngle = rotation - 90f,
-                        sweepAngle = 92f,
-                        useCenter = false,
-                        topLeft = ringTopLeft,
-                        size = ringSize,
-                        style = Stroke(stroke, cap = StrokeCap.Round),
-                    )
-                    drawPowerGlyph(PrimaryIdleColor)
-                }
-                is ConnectionState.Connected -> {
-                    if (connectedFill > 0f) {
-                        drawCircle(ConnectedColor.copy(alpha = 0.2f + connectedFill * 0.8f), radius = size.minDimension * 0.5f * connectedFill)
-                    }
-                    drawCircle(ConnectedColor, style = Stroke(stroke))
-                    drawShieldCheck(CanvasColor)
-                }
-                is ConnectionState.Failed -> {
-                    drawCircle(ErrorColor, style = Stroke(stroke))
-                    drawFailureGlyph(ErrorColor)
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val faceOffset = faceOffsetDp.dp.toPx()
+            val buttonRadius = size.minDimension * 0.335f
+            val baseCenter = center + Offset(0f, 8.dp.toPx())
+            val faceCenter = center + Offset(0f, faceOffset)
+            val accent = when (state) {
+                is ConnectionState.Connected -> ConnectedColor
+                is ConnectionState.Failed -> ErrorColor
+                is ConnectionState.Disconnecting -> MutedColor
+                else -> PrimaryIdleColor
+            }
+
+            if (state is ConnectionState.Connected) {
+                val rippleRadius = buttonRadius + (10.dp.toPx() * rippleProgress)
+                drawCircle(
+                    color = ConnectedColor.copy(alpha = (1f - rippleProgress) * 0.22f),
+                    radius = rippleRadius,
+                    center = center,
+                    style = Stroke(1.5.dp.toPx()),
+                )
+                drawCircle(
+                    color = ConnectedColor.copy(alpha = 0.12f),
+                    radius = buttonRadius + 15.dp.toPx(),
+                    center = center,
+                    style = Stroke(1.dp.toPx()),
+                )
+            }
+
+            if (state is ConnectionState.Connecting || state is ConnectionState.Switching) {
+                drawTickOrbit(center, buttonRadius + 15.dp.toPx(), rotation, accent)
+                drawArc(
+                    color = accent,
+                    startAngle = rotation - 90f,
+                    sweepAngle = 76f,
+                    useCenter = false,
+                    topLeft = Offset(
+                        center.x - buttonRadius - 9.dp.toPx(),
+                        center.y - buttonRadius - 9.dp.toPx(),
+                    ),
+                    size = Size(
+                        (buttonRadius + 9.dp.toPx()) * 2,
+                        (buttonRadius + 9.dp.toPx()) * 2,
+                    ),
+                    style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round),
+                )
+            } else if (state is ConnectionState.Disconnecting) {
+                drawArc(
+                    color = MutedColor,
+                    startAngle = -rotation - 90f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    topLeft = Offset(
+                        center.x - buttonRadius - 10.dp.toPx(),
+                        center.y - buttonRadius - 10.dp.toPx(),
+                    ),
+                    size = Size(
+                        (buttonRadius + 10.dp.toPx()) * 2,
+                        (buttonRadius + 10.dp.toPx()) * 2,
+                    ),
+                    style = Stroke(2.dp.toPx(), cap = StrokeCap.Round),
+                )
+            } else {
+                drawCircle(
+                    color = accent.copy(alpha = if (state is ConnectionState.Connected) 0.55f else 0.35f),
+                    radius = buttonRadius + 10.dp.toPx(),
+                    center = center,
+                    style = Stroke(1.5.dp.toPx()),
+                )
+            }
+
+            // Original solid-color depth stack: shadow, lower rim, moving face.
+            // No gradients or third-party artwork are used.
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.34f),
+                radius = buttonRadius + 2.dp.toPx(),
+                center = baseCenter + Offset(0f, 4.dp.toPx()),
+            )
+            drawCircle(color = DividerColor, radius = buttonRadius + 1.dp.toPx(), center = baseCenter)
+            drawCircle(color = SurfaceVariantColor, radius = buttonRadius, center = faceCenter)
+            drawCircle(
+                color = accent.copy(alpha = 0.16f),
+                radius = buttonRadius - 8.dp.toPx(),
+                center = faceCenter,
+            )
+            drawCircle(
+                color = accent,
+                radius = buttonRadius - 4.dp.toPx(),
+                center = faceCenter,
+                style = Stroke(2.5.dp.toPx()),
+            )
+            if (connectedReveal > 0f) {
+                drawCircle(
+                    color = ConnectedColor,
+                    radius = (buttonRadius - 8.dp.toPx()) * connectedReveal,
+                    center = faceCenter,
+                )
+            }
+
+            translate(top = faceOffset) {
+                when (state) {
+                    is ConnectionState.Disconnected,
+                    is ConnectionState.Connecting,
+                    is ConnectionState.Switching -> drawPowerGlyph(accent)
+                    is ConnectionState.Connected -> drawShieldCheck(CanvasColor)
+                    is ConnectionState.Disconnecting -> drawDisconnectGlyph(MutedColor)
+                    is ConnectionState.Failed -> drawFailureGlyph(ErrorColor)
                 }
             }
         }
+    }
+}
+
+private fun DrawScope.drawTickOrbit(center: Offset, radius: Float, rotation: Float, color: Color) {
+    repeat(12) { index ->
+        val angle = Math.toRadians((rotation + index * 30f - 90f).toDouble())
+        val direction = Offset(kotlin.math.cos(angle).toFloat(), kotlin.math.sin(angle).toFloat())
+        val alpha = 0.18f + (index + 1) / 12f * 0.66f
+        drawLine(
+            color = color.copy(alpha = alpha),
+            start = center + direction * (radius - 4.dp.toPx()),
+            end = center + direction * (radius + 2.dp.toPx()),
+            strokeWidth = 1.8.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
     }
 }
 
@@ -289,6 +391,27 @@ private fun DrawScope.drawShieldCheck(color: Color) {
     drawPath(path, color, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
     drawLine(color, Offset(c.x - 13.dp.toPx(), c.y + 1.dp.toPx()), Offset(c.x - 3.dp.toPx(), c.y + 12.dp.toPx()), 3.dp.toPx(), StrokeCap.Round)
     drawLine(color, Offset(c.x - 3.dp.toPx(), c.y + 12.dp.toPx()), Offset(c.x + 16.dp.toPx(), c.y - 10.dp.toPx()), 3.dp.toPx(), StrokeCap.Round)
+}
+
+private fun DrawScope.drawDisconnectGlyph(color: Color) {
+    val c = Offset(size.width / 2f, size.height / 2f)
+    val half = 19.dp.toPx()
+    val gap = 7.dp.toPx()
+    val stroke = 3.dp.toPx()
+    drawLine(
+        color,
+        Offset(c.x - half, c.y - gap),
+        Offset(c.x + half, c.y - gap),
+        stroke,
+        StrokeCap.Round,
+    )
+    drawLine(
+        color,
+        Offset(c.x - half, c.y + gap),
+        Offset(c.x + half, c.y + gap),
+        stroke,
+        StrokeCap.Round,
+    )
 }
 
 private fun DrawScope.drawFailureGlyph(color: Color) {
@@ -434,6 +557,7 @@ private fun QuickNavigation(onSettingsClick: () -> Unit, onLogsClick: () -> Unit
 @Composable
 private fun statusText(state: ConnectionState): String = when (state) {
     ConnectionState.Disconnected -> stringResource(R.string.status_disconnected)
+    ConnectionState.Disconnecting -> stringResource(R.string.status_disconnecting)
     is ConnectionState.Connecting -> stringResource(R.string.status_connecting)
     is ConnectionState.Connected -> stringResource(R.string.status_connected)
     is ConnectionState.Failed -> stringResource(R.string.status_failed)

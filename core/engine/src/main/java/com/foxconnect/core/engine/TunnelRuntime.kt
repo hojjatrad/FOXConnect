@@ -82,6 +82,12 @@ object TunnelRuntime {
         }
     }
 
+    internal fun disconnecting() {
+        mutableSnapshot.update {
+            it.copy(state = ConnectionState.Disconnecting, stats = TunnelStats.Empty)
+        }
+    }
+
     internal fun disconnected() {
         mutableSnapshot.value = TunnelSnapshot(state = ConnectionState.Disconnected)
     }

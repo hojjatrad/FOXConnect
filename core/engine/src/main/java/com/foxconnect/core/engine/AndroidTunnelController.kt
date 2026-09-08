@@ -60,6 +60,7 @@ class AndroidTunnelController(context: Context) {
         runCatching { eventLog.append(TunnelEventCode.DISCONNECT_REQUESTED) }
         authorization.revoke()
         configStore.clear()
+        runtimePublisher.disconnecting()
         return runCatching {
             appContext.startService(
                 Intent(appContext, FoxVpnService::class.java).setAction(FoxVpnService.ACTION_DISCONNECT),

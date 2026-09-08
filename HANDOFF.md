@@ -1,18 +1,32 @@
 # FOXConnect — handoff
 
-آخرین به‌روزرسانی: 2026-09-07
+آخرین به‌روزرسانی: 2026-09-08
 
 ## وضعیت فعال
 
-نسخهٔ در حال توسعه: **`0.5.0-phase4-alpha11-auto-update`**، `versionCode=16`.
-درخواست فعال این است که برنامه انتشار جدید GitHub را خودش اعلام کند و با دکمهٔ کاربر
-APK را امن دانلود/تأیید و نصب‌کنندهٔ Android را باز کند. تغییرهای updater در PR #2 ادغام،
-هر دو run الزامی CI سبز و APK ARM64 تشخیصی در `diagnostic-v0.5.0-alpha11` منتشر شده است.
-آزمون واقعی updater و data path روی دستگاه هنوز انجام نشده است.
+نسخهٔ در حال توسعه: **`0.5.1-phase4-alpha12-panel-import-control`**، `versionCode=17`،
+روی branch **`feature/alpha12-panel-import-control`** و base
+`ffe5d4a0979bc613825784fc42c47e23e3259cc3` است. تغییرها در commit فعلی feature branch
+ثبت شده‌اند، اما هنوز push/PR/CI یا منتشر نشده‌اند. آلفا ۱۲ import یک‌بارهٔ احراز هویت‌شدهٔ
+Marzban، PasarGuard و Hiddify، حالت
+واقعی `Disconnecting` و کنترل اتصال لایه‌ای بدون gradient را اضافه می‌کند.
 
-آلفا ۱۰ در commit `847db5b2a35f242827c5e514259cbaed1c1da968` و run `34098938303`
-CI را پاس و در `diagnostic-v0.4.9-alpha10` منتشر شد؛ پذیرش فیزیکی data path هنوز انجام
-نشده و آلفا ۱۱ engine آن را تغییر نمی‌دهد.
+اعتبارسنجی نهایی محلی موفق شد: ۲۳ تست app، ۴۳ تست engine با checker واقعی sing-box
+1.14.0، ۳۲ تست parser و ۱۳ تست storage، در مجموع ۱۱۱ تست بدون failure/error/skip.
+`:app:lintDebug` نیز در اجرای جداگانه کامل و موفق شد. هر دو split debug محلی assemble
+شدند، اما چون فقط برای compile از AAR بازسازی‌شده استفاده شد، APKهای محلی release artifact
+نیستند و پاک می‌شوند. build/release معتبر باید فقط با AAR واقعی checksum-pinned در
+GitHub Actions انجام شود.
+
+خروجی‌های موقت `/tmp/dex2jar` و `/tmp/d2j-work`، build outputهای تکراری و cache دانلود
+Android پاک شده‌اند. تا انتشار موفق آلفا ۱۲، `alpha11-delivery` نگه داشته شده چون هنوز
+جدیدترین APK عمومی قابل‌بازیابی است. پس از انتشار alpha12 باید با artifact/metadata جدید
+جایگزین و سپس حذف شود.
+
+آلفا ۱۱ در commit پایهٔ فعلی منتشر شده است و updater خودکار GitHub را دارد. آزمون واقعی
+panel import، updater و data path روی دستگاه هنوز انجام نشده است. آلفا ۱۰ در commit
+`847db5b2a35f242827c5e514259cbaed1c1da968` و run `34098938303` CI را پاس و در
+`diagnostic-v0.4.9-alpha10` منتشر شد؛ پذیرش فیزیکی data path هنوز انجام نشده است.
 
 Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI موفق بود، اما در
 آزمون فیزیکی همان دستگاه/شبکه شکست خورد: UI وضعیت `Connected` داشت، endpoint pingها
@@ -22,6 +36,43 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 بررسی history ثابت کرد ادعای قبلی مستندات دربارهٔ اصلاح route در آلفا ۷ نادرست بوده است:
 `route.auto_detect_interface=false` از commit اولیه تا APK آلفا ۹ باقی مانده بود. بنابراین
 گزارش قدیمی «تأیید ترافیک واقعی آلفا ۷» نباید مبنای پذیرش قرار گیرد.
+
+## تغییرهای آلفا ۱۲ (پیاده‌سازی‌شده؛ CI/انتشار/دستگاه در انتظار)
+
+- `PanelImportClient` فقط HTTPS، TLS پیش‌فرض معتبر، بدون redirect/userinfo/fragment، با
+  timeout و سقف body/user/config/total را می‌پذیرد؛ خطاها بدون URL/token/raw payload
+  به reason ثابت تبدیل می‌شوند و `CancellationException` هرگز بلعیده نمی‌شود.
+- Marzban/PasarGuard از token form و user list محدود با Bearer استفاده می‌کنند؛ Bearer
+  به subscription URL منتقل نمی‌شود. پاسخ‌های کاربر ناموفق با count محلی گزارش می‌شوند.
+- Hiddify یا personal path با Basic auth را مستقیم می‌خواند، یا با پرکردن client path
+  صریحاً وارد admin mode می‌شود. در admin mode credential فقط به API مستند همان origin
+  می‌رود و UUID subscription بدون header مدیر خوانده می‌شود.
+- password مالک در `CharArray` و bodyهای token/user/error، payloadهای تحویلی پس از parse،
+  bufferهای transport و payloadهای رهاشده best-effort overwrite می‌شوند. credential
+  در vault/WorkManager/log/event/crash text ذخیره نمی‌شود و فرم موقتاً `FLAG_SECURE` است.
+- payloadها دوباره از `UniversalConfigImporter` عبور می‌کنند، در سقف ۵۱۲ deduplicate و
+  فقط profile معتبر با `ProfileSource.PANEL` در repository رمزگذاری‌شده ذخیره می‌شود.
+- `ConnectionState.Disconnecting` در model/runtime/file bridge/controller/service/tile/UI
+  واقعی است؛ پیش از teardown منتشر و پس از پایان teardown به Disconnected می‌رود.
+- کنترل Home کاملاً original و solid-color است: depth press/release، haptic، orbit/tick
+  اتصال، ripple محدود متصل، motion قطع و shake شکست؛ هیچ asset/code/branding کپی نشده است.
+- دریافت APK رسمی Connectix 2.7.3 همچنان شکست خورده؛ تحلیل باینری یا استنتاج API ادعا نشود.
+
+## کارهای بعدی الزامی آلفا ۱۲
+
+1. diff نهایی و secret scan را مرور، commit و branch را push کنید؛ PAT افشاشدهٔ chat
+   هرگز استفاده نشود و فقط احراز هویت امن جدید کاربر/محیط مجاز است.
+2. PR بسازید و CI اجباری را با AAR واقعی checksum-pinned اجرا کنید: همهٔ ۱۱۱ test، checker
+   بومی، lint و هر دو split assembly باید سبز باشند؛ هر finding پیش از merge اصلاح شود.
+3. پس از merge، diagnostic ARM64 را با همان هویت diagnostic پایدار stage/verify و به‌صورت
+   prerelease منتشر کنید؛ package/version/ABI/hash/signature/16KiB alignment و secret scan
+   باید gate شوند. لینک مستقیم APK و checksum عمومی و anonymous updater را تأیید کنید.
+4. سپس فقط artifact/metadata/source ZIP جدید را محلی نگه دارید و `alpha11-delivery` و همهٔ
+   build/cache/AAR/tempهای alpha12 را پاک کنید.
+5. روی دستگاه واقعی هر سه نوع panel، حالت Hiddify personal/admin و خطا/partial/cancel را
+   تست کنید؛ credential/raw config نباید در log/backup/recents دیده شود.
+6. پذیرش data path آلفا ۱۰ به بعد همچنان لازم است: browser/app، DNS، upload/download،
+   RX/TX، IP خروجی، چند failover، Kill Switch و updater/install با اقدام صریح کاربر.
 
 ## تغییرهای updater آلفا ۱۱ (CI سبز؛ منتشرشده، در انتظار دستگاه)
 
@@ -261,8 +312,12 @@ metadata همراه: `FOXConnect-v13-debug-arm64-v8a.apk.sha256`، `SHA256SUMS` 
 `VERIFICATION.txt`. digest عمومی GitHub و checksum companion تأیید شدند؛ APKهای محلی،
 archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شوند.
 
-## اعتبارسنجی سبز
+## اعتبارسنجی
 
+- آلفا ۱۲: app=23، engine=43، parser=32 و storage=13، مجموع 111 test بدون
+  failure/error/skip؛ engine checker واقعی sing-box 1.14.0 را اجرا کرد. `:app:lintDebug`
+  و assemble هر دو split debug نیز محلی موفق شدند. APK محلی به‌دلیل AAR بازسازی‌شده فقط
+  compile proof است و artifact قابل نصب/انتشار نیست؛ CI و انتشار رسمی هنوز انجام نشده‌اند.
 - PR #2 با run `34108267225` و main با run `34108620356` برای آلفا ۱۱ موفق؛ checker
   دقیق 1.14.0، ۱۰۱ متد تست JVM، lint و هر دو split diagnostic سبز
 - APK نهایی آلفا ۱۱: package/version/ABI، certificate ثابت، v2، zipalign 16 KiB، همهٔ
@@ -286,6 +341,22 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 - ARM64-only، certificate برابر آلفا ۷، signature v2، ZIP/zipalign 16 KiB و LOAD align
 - scan نهایی: بدون PAT/credential، endpoint fixture یا `OWNER/FOXConnect`
 - diff قطعی source در `core/engine/src` نسبت به آلفا ۷: صفر فایل
+
+## تست پذیرش دستگاه پس از انتشار آلفا ۱۲
+
+1. روی panel آزمایشی بدون دادهٔ واقعی در source/log، Marzban و PasarGuard را با credential
+   معتبر/نامعتبر و پاسخ‌های کامل/ناقص اجرا کنید؛ فقط profileهای معتبر باید وارد vault شوند.
+2. Hiddify personal را با client path خالی و admin را با client path پر اجرا کنید؛ در proxy
+   قابل‌کنترل ثابت کنید Basic فقط به personal یا API مدیر می‌رود و header مدیر روی UUID `/sub`
+   و redirect ارسال نمی‌شود.
+3. import را وسط token/user/subscription cancel و Activity را rotate/close کنید؛ VPN جاری و
+   repository نباید خراب شود و credential نباید در logcat، crash، backup یا recents باشد.
+4. برای response بزرگ، بیش از ۱۰۰ user، URL غیر HTTPS، TLS نامعتبر، redirect و payload
+   unsupported، failure محلی درست و بدون URL/token/raw body نمایش داده شود.
+5. کنترل Home را در Disconnected/Connecting/Connected/Disconnecting/Failed و Switching
+   بررسی کنید؛ state فقط از runtime واقعی باشد، click دوم هنگام Disconnecting نادیده گرفته
+   شود و depth/haptic/rings/ripples/shake بدون gradient درست باشند.
+6. تمام پذیرش data path/updater فهرست آلفا ۱۱ نیز بدون کاهش اجرا شود.
 
 ## تست پذیرش دستگاه پس از انتشار آلفا ۱۱
 

@@ -190,4 +190,37 @@
     <string name="update_notification_title">به‌روزرسانی FOXConnect موجود است</string>
     <string name="update_notification_body">%1$s (کد %2$d)؛ برای دانلود امن و نصب لمس کنید</string>
     <string name="update_notification_action">مشاهده و نصب</string>
+
+    <string name="status_disconnecting">در حال قطع اتصال…</string>
+    <string name="import_from_panel">ورود از پنل سرور</string>
+    <string name="panel_import_running">در حال خواندن امن پنل…</string>
+    <string name="panel_import_title">ورود یک‌باره از پنل</string>
+    <string name="panel_provider">نوع پنل</string>
+    <string name="panel_provider_marzban">مرزبان</string>
+    <string name="panel_provider_pasarguard">پاسارگاد</string>
+    <string name="panel_provider_hiddify">هیدیفای</string>
+    <string name="panel_server_url">نشانی HTTPS پنل</string>
+    <string name="panel_username">نام کاربری</string>
+    <string name="panel_password">رمز عبور</string>
+    <string name="hiddify_client_path">مسیر مخفی کاربران هیدیفای (اختیاری)</string>
+    <string name="hiddify_client_path_hint">برای ورود مدیریتی همهٔ کاربران لازم است؛ فقط خود path، بدون /</string>
+    <string name="oauth_panel_import_hint">نشانی پایهٔ پنل را وارد کنید. FOXConnect از API رسمی توکن مدیر و فهرست کاربران استفاده می‌کند.</string>
+    <string name="hiddify_import_hint">برای یک حساب، نشانی کامل صفحهٔ شخصی هیدیفای را وارد کنید. برای ورود مدیریتی، نشانی شامل مسیر مخفی مدیر و مسیر مخفی کاربران را وارد کنید.</string>
+    <string name="panel_credentials_ephemeral">اطلاعات ورود فقط برای همین دریافت در حافظه استفاده می‌شود و ذخیره یا وارد لاگ نمی‌شود.</string>
+    <string name="panel_import_limit_note">فقط HTTPS با گواهی معتبر؛ بدون redirect؛ حداکثر ۱۰۰ کاربر، ۵۱۲ کانفیگ و ۴ MiB داده.</string>
+    <string name="panel_form_invalid">نشانی HTTPS یا اطلاعات ورود معتبر نیست</string>
+    <string name="panel_import_action">خواندن و واردکردن</string>
+    <string name="panel_error_authentication">نام کاربری یا رمز عبور پنل پذیرفته نشد</string>
+    <string name="panel_error_forbidden">این حساب اجازهٔ خواندن کاربران پنل را ندارد</string>
+    <string name="panel_error_network">ارتباط امن با پنل کامل نشد؛ اتصال شبکه را بررسی کنید</string>
+    <string name="panel_error_tls">گواهی TLS پنل معتبر نیست یا اتصال HTTPS امن برقرار نشد</string>
+    <string name="panel_error_redirect">برای جلوگیری از افشای اطلاعات ورود، تغییر مسیر پنل مسدود شد</string>
+    <string name="panel_error_size">پاسخ پنل از محدودیت امن FOXConnect بزرگ‌تر است</string>
+    <string name="panel_error_user_limit">پنل بیش از ۱۰۰ کاربر برگرداند؛ از لینک اشتراک محدودتر استفاده کنید</string>
+    <string name="panel_error_contract">پاسخ پنل با API مستند و پشتیبانی‌شده سازگار نیست</string>
+    <string name="panel_error_no_configs">پنل خوانده شد اما کانفیگ پشتیبانی‌شده‌ای پیدا نشد</string>
+    <plurals name="panel_import_partial_fetch">
+        <item quantity="one">%1$d منبع کاربر پاسخ قابل‌استفاده نداد و رد شد</item>
+        <item quantity="other">%1$d منبع کاربر پاسخ قابل‌استفاده ندادند و رد شدند</item>
+    </plurals>
 </resources>
