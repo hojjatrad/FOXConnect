@@ -69,7 +69,10 @@ jobs:
           ./gradlew --no-daemon --max-workers=1 testDebugUnitTest :app:lintDebug --stacktrace
       - name: Build diagnostic split APKs
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        run: ./gradlew --no-daemon --max-workers=1 assembleDebug --stacktrace
+        run: |
+          ./gradlew --no-daemon --max-workers=1 \
+            -Dorg.gradle.jvmargs='-Xmx1536m -XX:MaxMetaspaceSize=512m -Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -Dfile.encoding=UTF-8' \
+            assembleDebug --stacktrace
       - name: Upload diagnostic build artifacts
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
@@ -96,7 +99,9 @@ jobs:
           trap 'rm -f "$FOXCONNECT_SIGNING_KEYSTORE"' EXIT
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$FOXCONNECT_SIGNING_KEYSTORE"
           chmod 600 "$FOXCONNECT_SIGNING_KEYSTORE"
-          ./gradlew --no-daemon --max-workers=1 assembleRelease --stacktrace
+          ./gradlew --no-daemon --max-workers=1 \
+            -Dorg.gradle.jvmargs='-Xmx1536m -XX:MaxMetaspaceSize=512m -Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -Dfile.encoding=UTF-8' \
+            assembleRelease --stacktrace
       - name: Verify and stage production assets
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         env:
