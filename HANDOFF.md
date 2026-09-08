@@ -6,10 +6,13 @@
 
 نسخهٔ در حال توسعه: **`0.5.1-phase4-alpha12-panel-import-control`**، `versionCode=17`،
 روی branch **`feature/alpha12-panel-import-control`** و base
-`ffe5d4a0979bc613825784fc42c47e23e3259cc3` است. تغییرها در commit فعلی feature branch
-ثبت شده‌اند، اما هنوز push/PR/CI یا منتشر نشده‌اند. آلفا ۱۲ import یک‌بارهٔ احراز هویت‌شدهٔ
-Marzban، PasarGuard و Hiddify، حالت
-واقعی `Disconnecting` و کنترل اتصال لایه‌ای بدون gradient را اضافه می‌کند.
+`ffe5d4a0979bc613825784fc42c47e23e3259cc3` است. feature در commit `fe0cd6c` و اصلاح
+حافظهٔ packaging CI در `01c1b2e` روی PR #4 قرار دارند. run نخست `34196691852` بعد از
+موفقیت همهٔ test/checker/lint فقط با OOM در `ApkFlinger` شکست خورد؛ heap فقط برای
+assemble diagnostic/release افزایش یافت و run اصلاحی `34198554965` کاملاً سبز شد.
+آلفا ۱۲ هنوز merge یا منتشر نشده است. این نسخه import یک‌بارهٔ احراز هویت‌شدهٔ Marzban،
+PasarGuard و Hiddify، حالت واقعی `Disconnecting` و کنترل اتصال لایه‌ای بدون gradient را
+اضافه می‌کند.
 
 اعتبارسنجی نهایی محلی موفق شد: ۲۳ تست app، ۴۳ تست engine با checker واقعی sing-box
 1.14.0، ۳۲ تست parser و ۱۳ تست storage، در مجموع ۱۱۱ تست بدون failure/error/skip.
@@ -18,10 +21,10 @@ Marzban، PasarGuard و Hiddify، حالت
 نیستند و پاک می‌شوند. build/release معتبر باید فقط با AAR واقعی checksum-pinned در
 GitHub Actions انجام شود.
 
-خروجی‌های موقت `/tmp/dex2jar` و `/tmp/d2j-work`، build outputهای تکراری و cache دانلود
-Android پاک شده‌اند. تا انتشار موفق آلفا ۱۲، `alpha11-delivery` نگه داشته شده چون هنوز
-جدیدترین APK عمومی قابل‌بازیابی است. پس از انتشار alpha12 باید با artifact/metadata جدید
-جایگزین و سپس حذف شود.
+همهٔ APK/ZIP/AAR محلی، خروجی‌های build، cache/toolchain موقت و پوشه‌های تحقیق پاک شده‌اند؛
+حجم workspace حدود ۳٫۷ MiB است. APK و metadata آلفا ۱۱ فقط در GitHub Release عمومی
+نگه‌داری می‌شوند. کلید خصوصی diagnostic تنها استثنا است و هرگز نباید به GitHub، source،
+artifact یا log منتقل شود.
 
 آلفا ۱۱ در commit پایهٔ فعلی منتشر شده است و updater خودکار GitHub را دارد. آزمون واقعی
 panel import، updater و data path روی دستگاه هنوز انجام نشده است. آلفا ۱۰ در commit
@@ -37,7 +40,7 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 `route.auto_detect_interface=false` از commit اولیه تا APK آلفا ۹ باقی مانده بود. بنابراین
 گزارش قدیمی «تأیید ترافیک واقعی آلفا ۷» نباید مبنای پذیرش قرار گیرد.
 
-## تغییرهای آلفا ۱۲ (پیاده‌سازی‌شده؛ CI/انتشار/دستگاه در انتظار)
+## تغییرهای آلفا ۱۲ (پیاده‌سازی و PR CI سبز؛ merge/انتشار/دستگاه در انتظار)
 
 - `PanelImportClient` فقط HTTPS، TLS پیش‌فرض معتبر، بدون redirect/userinfo/fragment، با
   timeout و سقف body/user/config/total را می‌پذیرد؛ خطاها بدون URL/token/raw payload
@@ -60,18 +63,15 @@ Pre-release آلفا ۹ (`diagnostic-v0.4.8-alpha9`) از نظر build و CI م�
 
 ## کارهای بعدی الزامی آلفا ۱۲
 
-1. diff نهایی و secret scan را مرور، commit و branch را push کنید؛ PAT افشاشدهٔ chat
-   هرگز استفاده نشود و فقط احراز هویت امن جدید کاربر/محیط مجاز است.
-2. PR بسازید و CI اجباری را با AAR واقعی checksum-pinned اجرا کنید: همهٔ ۱۱۱ test، checker
-   بومی، lint و هر دو split assembly باید سبز باشند؛ هر finding پیش از merge اصلاح شود.
-3. پس از merge، diagnostic ARM64 را با همان هویت diagnostic پایدار stage/verify و به‌صورت
-   prerelease منتشر کنید؛ package/version/ABI/hash/signature/16KiB alignment و secret scan
-   باید gate شوند. لینک مستقیم APK و checksum عمومی و anonymous updater را تأیید کنید.
-4. سپس فقط artifact/metadata/source ZIP جدید را محلی نگه دارید و `alpha11-delivery` و همهٔ
-   build/cache/AAR/tempهای alpha12 را پاک کنید.
-5. روی دستگاه واقعی هر سه نوع panel، حالت Hiddify personal/admin و خطا/partial/cancel را
+1. commit مستندات نهایی را push کنید؛ پس از سبزی CI docs-only، PR #4 را merge و run اجباری
+   main را با AAR واقعی checksum-pinned تا پایان سبز کنترل کنید.
+2. diagnostic ARM64 را با همان هویت diagnostic پایدار stage/verify و به‌صورت prerelease
+   منتشر کنید؛ package/version/ABI/hash/signature/16KiB alignment و secret scan باید gate
+   شوند. لینک مستقیم APK/checksum عمومی و anonymous updater را تأیید کنید.
+3. هیچ APK/ZIP/AAR/cache/build محلی پس از upload باقی نگذارید؛ کلید امضا هرگز upload نشود.
+4. روی دستگاه واقعی هر سه نوع panel، حالت Hiddify personal/admin و خطا/partial/cancel را
    تست کنید؛ credential/raw config نباید در log/backup/recents دیده شود.
-6. پذیرش data path آلفا ۱۰ به بعد همچنان لازم است: browser/app، DNS، upload/download،
+5. پذیرش data path آلفا ۱۰ به بعد همچنان لازم است: browser/app، DNS، upload/download،
    RX/TX، IP خروجی، چند failover، Kill Switch و updater/install با اقدام صریح کاربر.
 
 ## تغییرهای updater آلفا ۱۱ (CI سبز؛ منتشرشده، در انتظار دستگاه)
@@ -316,8 +316,10 @@ archive قدیمی، AAR، cache و build outputs نگهداری نمی‌شون
 
 - آلفا ۱۲: app=23، engine=43، parser=32 و storage=13، مجموع 111 test بدون
   failure/error/skip؛ engine checker واقعی sing-box 1.14.0 را اجرا کرد. `:app:lintDebug`
-  و assemble هر دو split debug نیز محلی موفق شدند. APK محلی به‌دلیل AAR بازسازی‌شده فقط
-  compile proof است و artifact قابل نصب/انتشار نیست؛ CI و انتشار رسمی هنوز انجام نشده‌اند.
+  و assemble هر دو split debug محلی موفق شدند. در GitHub، run `34196691852` تمام
+  test/checker/lint را پاس کرد ولی packaging با heap 640 MiB OOM شد؛ پس از محدودکردن
+  heap 1536 MiB به assemble diagnostic/release، run `34198554965` با AAR واقعی، test،
+  checker، lint، packaging هر دو split و artifact upload کاملاً سبز شد. انتشار هنوز نیست.
 - PR #2 با run `34108267225` و main با run `34108620356` برای آلفا ۱۱ موفق؛ checker
   دقیق 1.14.0، ۱۰۱ متد تست JVM، lint و هر دو split diagnostic سبز
 - APK نهایی آلفا ۱۱: package/version/ABI، certificate ثابت، v2، zipalign 16 KiB، همهٔ

@@ -23,6 +23,8 @@
 - افزودن regressionهای جریان Marzban/PasarGuard/Hiddify، import ناقص، پاک‌سازی body خطا،
   حفظ cancellation، sanitization خطای غیرمنتظره، عدم انتقال header احراز هویت، رد HTTP،
   redaction نوع‌های حساس و هویت runtime هنگام قطع؛ `versionCode` به 17 ارتقا یافت.
+- افزایش heap فقط برای مرحله‌های packaging diagnostic/release در GitHub Actions؛ run نخست
+  پس از test/checker/lint با OOM در zipflinger شکست خورد و run اصلاحی PR کاملاً سبز شد.
 - دریافت APK Connectix 2.7.3 از URL رسمی همچنان در TLS/connect timeout شکست خورد؛ هیچ
   تحلیل باینری ادعا نمی‌شود و هیچ API از marketing یا حدس وارد پیاده‌سازی نشده است.
 
